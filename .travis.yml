@@ -3,15 +3,7 @@ python: 3.7
 jobs:
   include:
     - if: branch = master
-      python: 2.7
-      env: TOXENV=py27-master
-      after_success: codecov
-    - if: branch = master
       env: TOXENV=py37-master
-      after_success: codecov
-    - if: branch != master
-      python: 2.7
-      env: TOXENV=py27-dev
       after_success: codecov
     - if: branch != master
       env: TOXENV=py37-dev
@@ -28,19 +20,18 @@ jobs:
         server: https://test.pypi.org/legacy/
         user: "__token__"
         password:
-          secure: vSk6/P3sklyabNsEa9xGzL2th7EwtisAJMy+uC9eBqbfCfk7fspUZHNwvpDjI/r+f67Us3svsszR35xIuV2LfO6JqexRVCQzWydwPsAC42g1IgGftkihrxPji8fujxc0rirowUg4PqJdWIQkFvUbYSJWiLt2A2hjsBBxYt5sqa+JHK/HFkd2TLMlWS6zwh3/eFVagT1ju84oVfcXHKD5gPkS/jb/FjfKvD5GOIQbp0OrXomtsYQt+CJfOmN01AYNSmeTPwkHzrJ14AC3oxak6SwPBapoHR/0kJ79FxMt4C73xWEjaKcufD1rCqYIabZN3OHNEwInX6xbIUkiXUOLoGc6aAIeOQvaugy2bd/VSvNtAAmIFFRtp7FS/7/W3jL5Zm/Umn61OxAY7sXqADf8Evtq6Q7WugsxUiD6oKn7aDxzz53Pc91fxnP0mEDtbhlSlcGI3E0n3Qv+NVPrpx2OAz3Oa3hWjofFapP6oddsXdrBmJHVJMct2FvWcxel1j0dfvMIb50MOjQGc1mQA9mfh/1xb6T4RjicJhf27agxCimktGGKaqSUq4A1w1hXRQjENL0FSZUOfcShCc1q1szcPxeLlnY5hUkY3utf4dY5FM/LOpPKDDwrLKF6X7I2dB2nGh3UwOp0EnXQ+23EZYsAJYrVsoyfbN/utGh5pvn65rU=
+          secure: # todo
         on:
           branch: dev
-    - stage: Deploy to PyPI release (now to test PyPI)
+    - stage: Deploy to PyPI release
       env: TOXENV=build
       deploy:
         distributions: skip
         skip_cleanup: true
         provider: pypi
-        server: https://test.pypi.org/legacy/
-        user: quali
+        user: "__token__"
         password:
-          secure: neiCeyxYGTOmLeUvMnc/A1qCgscDvDyLDD4kb3PHEEywjsMhGjrK4HuWCg8Q1SKCJLbeuKDfEjKMy2tl3vhDGV529UU8G3FBCEgFglsrq0ZwuWYl9imXiuDCfBMdTk4eBuPsmp9FAKqXykwYMkfCrkFX30TolI1ATciDUaS075GaMT6BQTjnfCLwkm5XNZ6zO9mMbu4CBvK3bChbe46H7d8m01xcP4HvKIYYXUKD5/6hg1jTGo25EofikwptoYksdezhhT1ygg8qYe9/dbNo9kJ0Z+bOu3sGnjw8n0HHznhjQ8NgTSgraCaTolcWFdc3Ui1B42yRvGZsJ8jb81EzMkZZsVWwUFNx80pdUzlEX3VExYB7IfuhI3iAB3h745320rBYTGLqVyh/2GBsABYLmqAeqgS+me+y2QH+VHZ4uTQmOz5FCs6YhlDEXiQ66UVNBUBTwjVYU+jCvKvnuxxAOv40Ij0AkHEN09gx19xwFB3COvbpm/qEcnORV6VTJA22OHeZYxVy1zdb/lPioC107IeFdokdUt2yqlNyPMvtem+9GTyKaRudfV16g29t6uGFES1vOu1PFoER95hOBzoEhsg3tu6AdVPa3a0jEWZfr6IGeQkDRUfFo/W5hcuxmz5N+5j4AQ8RNCQO+Mc5QnJK6KanDog4mAh6nyGzhM90Yck=
+          secure: # todo
         on:
           tags: true
     - stage: Create GitHub release
@@ -57,10 +48,10 @@ jobs:
         skip_cleanup: true
         draft: true
         api_key:
-          secure: oVZ0sWa7p9w0sMlxVWLCOkCkcwEBb7uMHz4lYtBrKyAaisHi6Cbz3muQHHmv+bZ116KJea+UcrN/gaCIs5Mchfb6WjLKJn7fFaWxdsX2RncfNR8QJ14mXpJwJAPV9IEnGK01CboSt5kT5koI8oaISprt6sFTnIWliCsBESniJZH9X3rC62cELZOodpGUm7tSd6+cjKwNB75Hgxv5nQREgi8W6GAo7EKga4pTqfD08tvYPGfp5gkZbvUTt04iIfV48nBjBe6O7e1+3IHycAOpPTOQPNRntUvRxlWGo5BI7pmaVlZfZ38LR2aNRw8I32PeugIM6Hhuq5FtecnzpkTBoUpz9gEnrdvPosW6kkOHUMaaRSEpzam6VCdS0KCwzFcxqalQI01cn+Xl1yeSASeLvP9UbAykZ3bsA4FqbdLbkzWnVetbU0CDfMz8tamxOdikExdtrfCl/6hxM75wv+tjLL7UYfaEXdt6Dno0xVebH4om6JuObVMpVz8+2DJzKYRFt94ZL/7HAVAAh8n7xMwqoH+9CpggGk2Q8wp3pq0SM/zV9rut7tgV7BxOoLCr5WZdr8I3lwMc+vqZrNZ80RSez6m6wQu/krpFacIFNsAQ5A09Mi8dcpVwn4y30xqcPVFIV1L/XWkiJVRt+rUX1P90QFZDpbrUl031ISjVbyfvXIg=
+          secure: todo  # todo
         file_glob: true
         file: dist/*
-        name: cloudshell-template $GIT_TAG
+        name: cloudshell-cp-openstack $GIT_TAG
         target_commitish: master
         on:
           branch: master
@@ -86,5 +77,5 @@ stages:
     if: branch = dev AND type != pull_request
   - name: Create GitHub release
     if: branch = master AND type != pull_request
-  - name: Deploy to PyPI release (now to test PyPI)
+  - name: Deploy to PyPI release
     if: tag IS present
