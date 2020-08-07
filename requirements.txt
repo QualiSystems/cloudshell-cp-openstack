@@ -1,1 +1,3 @@
 setuptools>=40.0
+cloudshell-cp-core~=2.0
+cloudshell-shell-standards~=1.0
