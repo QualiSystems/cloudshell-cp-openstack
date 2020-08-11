@@ -14,22 +14,45 @@ ResourceAttrROShellName = partial(
 )
 
 
-class OpenStackResourceConfig(GenericResourceConfig):
-    controller_url = ResourceAttrROShellName("Controller URL")
-    openstack_domain_name = ResourceAttrROShellName("OpenStack Domain Name")
-    openstack_project_name = ResourceAttrROShellName("OpenStack Project Name")
-    username = ResourceAttrROShellName("User Name")
-    password = PasswordAttrRO("Password", ResourceAttrRO.NAMESPACE.SHELL_NAME)
-    openstack_reserved_networks = ResourceAttrROShellName("OpenStack Reserved Networks")
-    openstack_management_network_id = ResourceAttrROShellName(
-        "OpenStack Management Network ID"
+class ResourceListAttrRO(ResourceAttrRO):
+    def __init__(self, name, namespace, *args, sep=";", **kwargs):
+        super().__init__(name, namespace, *args, **kwargs)
+        self._sep = sep
+
+    def __get__(self, instance, owner) -> List[str]:
+        values = super().__get__(instance, owner)
+        return list(filter(bool, map(str.strip, values.split(self._sep))))
+
+
+class OSAttributeNames:
+    controller_url = "Controller URL"
+    os_domain_name = "OpenStack Domain Name"
+    os_project_name = "OpenStack Project Name"
+    username = "User Name"
+    password = "Password"
+    os_reserved_networks = "OpenStack Reserved Networks"
+    os_mgmt_net_id = "OpenStack Management Network ID"
+    vlan_type = "Vlan Type"
+    os_physical_int_name = "OpenStack Physical Interface Name"
+    floating_ip_subnet_id = "Floating IP Subnet ID"
+    exec_server_selector = "Execution Server Selector"
+
+
+class OSResourceConfig(GenericResourceConfig):
+    ATTR_NAMES = OSAttributeNames
+    controller_url = ResourceAttrROShellName(ATTR_NAMES.controller_url)
+    os_domain_name = ResourceAttrROShellName(ATTR_NAMES.os_domain_name)
+    os_project_name = ResourceAttrROShellName(ATTR_NAMES.os_project_name)
+    username = ResourceAttrROShellName(ATTR_NAMES.username)
+    password = PasswordAttrRO(ATTR_NAMES.password, ResourceAttrRO.NAMESPACE.SHELL_NAME)
+    os_reserved_networks = ResourceListAttrRO(
+        ATTR_NAMES.os_reserved_networks, ResourceListAttrRO.NAMESPACE.SHELL_NAME
     )
-    vlan_type = ResourceAttrROShellName("Vlan Type")
-    openstack_physical_interface_name = ResourceAttrROShellName(
-        "OpenStack Physical Interface Name"
-    )
-    floating_ip_subnet_id = ResourceAttrROShellName("Floating IP Subnet ID")
-    execution_server_selector = ResourceAttrROShellName("Execution Server Selector")
+    os_mgmt_net_id = ResourceAttrROShellName(ATTR_NAMES.os_mgmt_net_id)
+    vlan_type = ResourceAttrROShellName(ATTR_NAMES.vlan_type)
+    os_physical_int_name = ResourceAttrROShellName(ATTR_NAMES.os_physical_int_name)
+    floating_ip_subnet_id = ResourceAttrROShellName(ATTR_NAMES.floating_ip_subnet_id)
+    exec_server_selector = ResourceAttrROShellName(ATTR_NAMES.exec_server_selector)
 
     @classmethod
     def from_context(
@@ -38,7 +61,7 @@ class OpenStackResourceConfig(GenericResourceConfig):
         context: Union[AutoLoadCommandContext],
         api: Optional[CloudShellAPISession] = None,
         supported_os: Optional[List[str]] = None,
-    ) -> "OpenStackResourceConfig":
+    ) -> "OSResourceConfig":
         return cls(
             shell_name=shell_name,
             name=context.resource.name,
