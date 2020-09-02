@@ -1,4 +1,3 @@
-packaging~=20.4
 setuptools>=40.0
 cloudshell-cp-core~=2.1
 cloudshell-shell-standards~=1.1
