@@ -1,10 +1,10 @@
 import os
-from distutils.version import StrictVersion
 
+from packaging import version
 from setuptools import find_packages, setup
 from setuptools.version import __version__ as setuptools_version
 
-if StrictVersion(setuptools_version) < StrictVersion("40.0"):
+if version.parse(setuptools_version) < version.parse("40.0"):
     import sys
 
     python = sys.executable
