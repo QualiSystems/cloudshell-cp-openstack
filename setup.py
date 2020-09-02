@@ -1,10 +1,9 @@
 import os
 
-from packaging import version
 from setuptools import find_packages, setup
 from setuptools.version import __version__ as setuptools_version
 
-if version.parse(setuptools_version) < version.parse("40.0"):
+if tuple(map(int, setuptools_version.split("."))) < (40, 0):
     import sys
 
     python = sys.executable
