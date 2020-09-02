@@ -1,19 +1,20 @@
 import ipaddress
 import random
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import keystoneauth1.exceptions
-from keystoneauth1.session import Session
-from neutronclient.v2_0 import client as neutron_client
-from novaclient import client as nova_client
+from neutronclient.client import exceptions as neutron_exceptions
 
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
+if TYPE_CHECKING:
+    from cloudshell.cp.openstack.os_api.api import OSApi
 
-def validate_os_session(os_session: Session, resource_conf: OSResourceConfig):
+
+def validate_conf_and_connection(api: "OSApi", resource_conf: OSResourceConfig):
     _validate_resource_conf(resource_conf)
-    _validate_connection(os_session, resource_conf)
-    _validate_network_attributes(os_session, resource_conf)
+    _validate_connection(api, resource_conf)
+    _validate_network_attributes(api, resource_conf)
 
 
 def _validate_resource_conf(resource_conf: OSResourceConfig):
@@ -24,7 +25,7 @@ def _validate_resource_conf(resource_conf: OSResourceConfig):
     _is_not_empty(
         resource_conf.os_project_name, resource_conf.ATTR_NAMES.os_project_name
     )
-    _is_not_empty(resource_conf.username, resource_conf.ATTR_NAMES.username)
+    _is_not_empty(resource_conf.user, resource_conf.ATTR_NAMES.user)
     _is_not_empty(resource_conf.password, resource_conf.ATTR_NAMES.password)
     _is_not_empty(resource_conf.os_mgmt_net_id, resource_conf.ATTR_NAMES.os_mgmt_net_id)
     _is_not_empty(
@@ -46,11 +47,9 @@ def _is_http_url(value: str, err_value: str):
         raise ValueError(f"{value} is not valid format for {err_value}")
 
 
-def _validate_connection(os_session: Session, resource_conf: OSResourceConfig):
-    client_version = "2.0"
+def _validate_connection(api: "OSApi", resource_conf: OSResourceConfig):
     try:
-        client = nova_client.Client(client_version, session=os_session)
-        client.servers.list()
+        api._nova.servers.list()
     except (
         keystoneauth1.exceptions.http.BadRequest,
         keystoneauth1.exceptions.http.Unauthorized,
@@ -59,46 +58,35 @@ def _validate_connection(os_session: Session, resource_conf: OSResourceConfig):
     except keystoneauth1.exceptions.http.NotFound:
         raise ValueError(f"Controller URL {resource_conf.controller_url} is not found")
     except Exception as e:
-        raise ValueError(f"One or more values are not correct. {e}")
+        raise ValueError(f"One or more values are not correct. {e}") from e
 
 
-def _validate_network_attributes(os_session: Session, resource_conf: OSResourceConfig):
-    client = neutron_client.Client(session=os_session, insecure=True)
-    _get_network_id(client, resource_conf.os_mgmt_net_id)
-    _validate_floating_ip_subnet(client, resource_conf.floating_ip_subnet_id)
+def _validate_network_attributes(api: "OSApi", resource_conf: OSResourceConfig):
+    _get_network_dict(api, resource_conf.os_mgmt_net_id)
+    _validate_floating_ip_subnet(api, resource_conf.floating_ip_subnet_id)
     _validate_vlan_type(
-        client, resource_conf.vlan_type, resource_conf.os_physical_int_name
+        api, resource_conf.vlan_type, resource_conf.os_physical_int_name
     )
     _validate_reserved_networks(resource_conf.os_reserved_networks)
 
 
-def _get_network_id(neut_client: neutron_client.Client, network_id: str):
+def _get_network_dict(api: "OSApi", network_id: str):
     try:
-        net_lst = neut_client.list_networks(id=network_id)["networks"]
+        val = api.get_network_dict(id=network_id)
     except Exception as e:
-        raise ValueError(f"Error getting network. {e}")
-    else:
-        if not net_lst:
-            raise ValueError(f"Network with ID {network_id} Not Found")
-        elif len(net_lst) > 1:
-            raise ValueError(f"More than one network matching ID {network_id} Found")
-        return net_lst[0]
+        raise ValueError(f"Error getting network. {e}") from e
+    return val
 
 
-def _validate_floating_ip_subnet(
-    neut_client: neutron_client.Client, floating_ip_subnet_id: str
-):
-    subnet = neut_client.show_subnet(floating_ip_subnet_id)
-    ext_net_id = subnet["subnet"]["network_id"]
-    ext_net = _get_network_id(neut_client, ext_net_id)
+def _validate_floating_ip_subnet(api: "OSApi", floating_ip_subnet_id: str):
+    net_id = api.get_network_id_for_subnet_id(floating_ip_subnet_id)
+    ext_net = _get_network_dict(api, net_id)
     if not ext_net["router:external"]:
-        msg = f"Network with ID {ext_net_id} exists but is not an external network"
+        msg = f"Network with ID {net_id} exists but is not an external network"
         raise ValueError(msg)
 
 
-def _validate_vlan_type(
-    neut_client: neutron_client.Client, vlan_type: str, os_physical_int: str
-):
+def _validate_vlan_type(api: "OSApi", vlan_type: str, os_physical_int: str):
     e_msg = ""
     for retry in range(10):
         data = {
@@ -110,13 +98,13 @@ def _validate_vlan_type(
         if vlan_type.lower() == "vlan":
             data["provider:physical_network"] = os_physical_int
         try:
-            new_net = neut_client.create_network({"network": data})
-            neut_client.delete_network(new_net["network"]["id"])
+            new_net = api.create_network({"network": data})
+            api.remove_network(new_net["network"]["id"])
             break
-        except neutron_client.exceptions.Conflict as e:
+        except neutron_exceptions.Conflict as e:
             e_msg = f"Error occurred during creating network after {retry} retries. {e}"
         except Exception as e:
-            raise ValueError(f"Error occurred during creating network. {e}")
+            raise ValueError(f"Error occurred during creating network. {e}") from e
     else:
         raise ValueError(e_msg)
 

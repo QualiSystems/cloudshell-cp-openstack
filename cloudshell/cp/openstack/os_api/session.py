@@ -10,7 +10,7 @@ def get_os_session(resource_config: OSResourceConfig, logger: Logger) -> Session
     logger.debug("Getting OpenStack Session")
     auth = v3.Password(
         auth_url=resource_config.controller_url,
-        username=resource_config.username,
+        username=resource_config.user,
         password=resource_config.password,
         project_name=resource_config.os_project_name,
         user_domain_id=resource_config.os_domain_name,
