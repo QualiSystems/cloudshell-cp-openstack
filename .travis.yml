@@ -20,7 +20,7 @@ jobs:
         server: https://test.pypi.org/legacy/
         user: "__token__"
         password:
-          secure: # todo
+          secure: "G1zXdVqDl8EzoixAcagiHB8p0qMAXJz24LSdpmaHS3vXKi0loXMXiomCbLmNkhHD0GSkphgbwyChniv98OgXWljntCypy8rqRSVTr5oZCQagXg7rls36SWIbla5gkA1SxIcib4FopvrlUHcN41Fzp5vaIfyPr+gpXoTbl/+5o1d4snfjnSwJDUuOp+vewj7xDzCQ7/11pMlSUkrCYSLEUECpHI55q2zH/WIiiB3ncINpfoYL5bkvnNkXbzKsE2E5IJSiOPOXsHbsDXQWbRZN+UFBKA+jtMXeIWmt//s4mx3RTJk/GgUSGQpvRv8o9jR6c9Qls9YReikHnWDjLeRIM4XDU3BDApUjLOIcqOjj/FwXlJIp2XxhPINKx9al+vx2OzW9ImooFnARIPlRoNxtdiDyGW8oMda3N0r9o9p5P8qztfPWu60p2ZaBuvrLe6SoR/0lHsvjHh1GjyeVzxgqaOaKYBl5OIhqwKvYuvaRq20bqAomA7OToyg68YZL8LLg3iARtr7QQsZcCWz9Kj+Zd7xxYNneUb1cgzkc2NY1PiiIEFL0LPz1fknu8IFIicIiDa7u612o5BNGgPfRg1kjsf0R07dTTnxAPCpr29cncv0jQ9NmGB0lRoSbbdH3kR+j4j55V+TK/LKyMXBP9nJXo5ajQP9aV1FmqqRbAz9OzEY="
         on:
           branch: dev
     - stage: Deploy to PyPI release
@@ -31,7 +31,7 @@ jobs:
         provider: pypi
         user: "__token__"
         password:
-          secure: # todo
+          secure: "qXeRXjn0TvE/veAxLEE52UD/3ysvh1XHBdqWPXpQaM1si/JMlM7JzPtMmIMw6RqTW6gu5GQpxdn8gogfbqD0whXkcUkFi4bVbMTthFxby3cVQA+cmqp3RrAzZXDOast8yck/52wBbXXEZiy60vAYfsNVQehSpN0ZtahttbXzX9F+dE0O4s3wBXSctDm/Fu3LB7wA3b97iw/u0Xg2FL9KqOTJz4RA0TFrFdhe3mAEbNztHmIpPcBFYTaBCPijo+YF3eDCvdfa7+DKp3xLxsjr90GDW3cLSuuYuItys62nMKANZ0hC0evlX8na3kgoA8pdx/LQ1Ee3s6LQ05QZc8LGXdG5t47nQkCtD70w8zSmepPCGSi4kTjOMWet2ksaqtD2/3Y64DbTdp6tQqT50TWdhb9IY3zqxnmn824j7CsFEMwxFoI+jaFY/MB2MLAVFqB5daHIaFHwe2vZJuv7BQyJwyrP/khB011AllQT4z7ogU/KT3UgBmWF+sDf56pSRJjWvstvKrdlcqqdg9lThRskDgZ3yTFb0HmKOqTKvjehOuU8J/+wwWGZAYeDy6UpyInXmskLgVzVlUl47nHjbxPsbhZGb4ZzIEm/Q+ptNZ3xTL+K4fFGjCYTqVQemrs2H8ywe9+jPV/gUqgqfasrEi5EZkAJUe9u/QzBLMITJ+Ppikw="
         on:
           tags: true
     - stage: Create GitHub release
@@ -48,7 +48,7 @@ jobs:
         skip_cleanup: true
         draft: true
         api_key:
-          secure: todo  # todo
+          secure: "UI+tI4NsJWzZNH3wzzBloS8YlMd5SLWiwt5Qhvf7wf4moS5/puHHcF8wHzlM+A2XVOYyEV44vHAVhfRU/U72DE3ZgC8pt0b/XEv81U7DWw/Hsq/+wAn3THboqJpKgMt2GNxHdn3ZFDfaYZUf45EtEZ/kyG6I3ymIddqu5NCgQ9JsoiwCjXtBp9k8WHs8m8yPw3vbbBOq3gaMUh/QXzFTqi1Y7DKMZimCzStuJsQApqlTBdXpZYL2NJJi4t6J4rpTsru/jJ4lydtXqwgIGz9d9mmWxblixSv3bPbQsuxTGgjdwcVf1PsLIoLiG8JJeVdVjwTR9dLDzV1XzU7v33OXVlmuRctOzZIjxvhGLUOSk742myd3UlXbciF5ePevHXl89+VpAjNjlXVYipUIm9CIMyv7X6NsdatUgR5uNd/cP/cz4PLIADJwuHbhYR463tYcuw03vJu1XcIctxMcen+FKR7rx8FvUGmorOBV6QTXhuSqD1jLB6SWXw80EkBQJDu7tOjBQfAClnlmqQeEltWiQn9IgYNknDAEBTQOKVWLnEjLSNpPL0OL5lgzwaUx6p9MJuOWzcaRtoRUXKAJf5xFBQbvaWXM/mI7lqlKCStRG8mXY6ZwHZgqniDcwkny51fxzdO/EAigy9hF86KGL/i2C1LYklxBR6ZIPNb243TSPjY="
         file_glob: true
         file: dist/*
         name: cloudshell-cp-openstack $GIT_TAG

@@ -1,11 +1,11 @@
 repos:
   - repo: https://github.com/timothycrosley/isort
-    rev: 5.3.0
+    rev: 5.4.2
     hooks:
       - id: isort
         language_version: python3.7
   - repo: https://github.com/python/black
-    rev: 19.10b0
+    rev: 20.8b1
     hooks:
       - id: black
         language_version: python3.7

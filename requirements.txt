@@ -1,6 +1,9 @@
+cloudshell-cp-core~=2.1
+cloudshell-shell-standards~=1.1
+cloudshell-shell-connectivity-flow~=2.0
 setuptools>=40.0
-cloudshell-cp-core~=2.0
-cloudshell-shell-standards~=1.0
 python-keystoneclient~=4.1
 python-novaclient~=17.2
 python-neutronclient~=7.2
+jsonpickle~=1.4
+keystoneauth1~=4.2
