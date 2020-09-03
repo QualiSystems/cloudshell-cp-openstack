@@ -22,10 +22,10 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         self,
         vlan_range: str,
         port_mode: str,
-        port_name: str,
+        full_name: str,
         qnq: bool,
         c_tag: str,
-        vm_uid: str = None,
+        vm_uid: str,
     ):
         net_dict = self._api.get_or_create_net_with_segmentation_id(int(vlan_range))
         if not net_dict["subnets"]:
@@ -40,7 +40,7 @@ class ConnectivityFlow(AbstractConnectivityFlow):
             raise
 
     def _remove_vlan_flow(
-        self, vlan_range: str, port_name: str, port_mode: str, vm_uid: str = None
+        self, vlan_range: str, full_name: str, port_mode: str, vm_uid: str
     ):
         try:
             net_dict = self._api.get_net_with_segmentation_id(int(vlan_range))
@@ -53,7 +53,7 @@ class ConnectivityFlow(AbstractConnectivityFlow):
             with self._subnet_lock:
                 self._api.remove_network(net_dict["id"])
 
-    def _remove_all_vlan_flow(self, port_name: str, vm_uid: str = None):
+    def _remove_all_vlan_flow(self, full_name: str, vm_uid: str):
         instance = self._api.get_instance(vm_uid)
         net_ids = self._api.get_all_net_ids_with_segmentation(instance)
         for net_id in net_ids:
