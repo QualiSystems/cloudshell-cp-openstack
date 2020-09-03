@@ -67,7 +67,10 @@ class NeutronService:
                 pass
         try:
             self._neutron.delete_network(net_id)
-        except neutron_exceptions.NetworkInUseClient:
+        except (
+            neutron_exceptions.NetworkInUseClient,
+            neutron_exceptions.NetworkNotFoundClient,
+        ):
             pass
 
     def get_or_create_net_with_segmentation_id(
