@@ -43,7 +43,7 @@ def _is_not_empty(value: str, err_value: str):
 
 def _is_http_url(value: str, err_value: str):
     v = value.lower()
-    if not v.startswith("http://") or v.startswith("https://"):
+    if not v.startswith("http://") and not v.startswith("https://"):
         raise ValueError(f"{value} is not valid format for {err_value}")
 
 
