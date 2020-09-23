@@ -1,6 +1,6 @@
 import ipaddress
 import random
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Iterable, List
 
 import keystoneauth1.exceptions
 from neutronclient.client import exceptions as neutron_exceptions
@@ -32,19 +32,25 @@ def _validate_resource_conf(resource_conf: OSResourceConfig):
         resource_conf.floating_ip_subnet_id,
         resource_conf.ATTR_NAMES.floating_ip_subnet_id,
     )
-    if resource_conf.vlan_type.lower() not in ("vlan", "vxlan"):
-        raise ValueError('Vlan Type should be one of "VLAN" or "VXLAN".')
+    _is_one_of_the(
+        resource_conf.vlan_type, ("VLAN", "VXLAN"), resource_conf.ATTR_NAMES.vlan_type
+    )
 
 
-def _is_not_empty(value: str, err_value: str):
+def _is_not_empty(value: str, attr_name: str):
     if not value:
-        raise ValueError(f"{err_value} cannot be empty")
+        raise ValueError(f"{attr_name} cannot be empty")
 
 
-def _is_http_url(value: str, err_value: str):
+def _is_http_url(value: str, attr_name: str):
     v = value.lower()
     if not v.startswith("http://") and not v.startswith("https://"):
-        raise ValueError(f"{value} is not valid format for {err_value}")
+        raise ValueError(f"{value} is not valid format for {attr_name}")
+
+
+def _is_one_of_the(value: str, expected_vals: Iterable[str], attr_name: str):
+    if value.lower() not in map(str.lower, expected_vals):
+        raise ValueError(f"{attr_name} should be one of {expected_vals}")
 
 
 def _validate_connection(api: "OSApi", resource_conf: OSResourceConfig):
