@@ -166,6 +166,31 @@ class NeutronService:
         floating_ip_id = floating_ips_dict["floatingips"][0]["id"]
         self._neutron.delete_floatingip(floating_ip_id)
 
+    def create_security_group(self, sg_name: str) -> str:
+        resp = self._neutron.create_security_group(
+            {"security_group": {"name": sg_name}}
+        )
+        return resp["security_group"]["id"]
+
+    def create_security_group_rule(
+        self, sg_id: str, cidr: str, port_min: int, port_max: int, protocol: str
+    ):
+        self._neutron.create_security_group_rule(
+            {
+                "security_group_rule": {
+                    "remote_ip_prefix": cidr,
+                    "port_range_min": port_min,
+                    "port_range_max": port_max,
+                    "protocol": protocol,
+                    "security_group_id": sg_id,
+                    "direction": "ingress",
+                }
+            }
+        )
+
+    def delete_security_group(self, sg_id: str):
+        self._neutron.delete_security_group(sg_id)
+
 
 def _generate_subnet(blacklist_subnets: Set[IPv4Network]) -> IPv4Network:
     first_second_octet_dict = {10: range(256), 172: range(16, 32), 192: (168,)}
