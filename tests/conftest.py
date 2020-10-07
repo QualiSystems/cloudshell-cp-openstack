@@ -106,6 +106,8 @@ def os_session():
 def nova_instance_factory():
     def wrapper(status: Union[str, Iterable[str]]):
         class NovaInstance(Mock):
+            fault = {"message": "fault message"}
+
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 if isinstance(status, str):
