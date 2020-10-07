@@ -1,10 +1,17 @@
+import json
+import time
+import uuid
+from itertools import cycle
 from logging import Logger
+from typing import Iterable, Union
 from unittest.mock import Mock, create_autospec
 
 import pytest
 from keystoneauth1.session import Session as KeyStoneSession
 from neutronclient.v2_0.client import Client as NeutronClient
 
+from cloudshell.cp.core.cancellation_manager import CancellationContextManager
+from cloudshell.cp.core.request_actions import DeployVMRequestActions
 from cloudshell.shell.core.driver_context import (
     AppContext,
     ConnectivityContext,
@@ -14,6 +21,7 @@ from cloudshell.shell.core.driver_context import (
 )
 
 from cloudshell.cp.openstack.constants import SHELL_NAME
+from cloudshell.cp.openstack.models import OSNovaImgDeployApp
 from cloudshell.cp.openstack.os_api.api import OSApi
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
@@ -95,8 +103,30 @@ def os_session():
 
 
 @pytest.fixture()
-def nova():
-    return Mock(name="NovaClient")
+def nova_instance_factory():
+    def wrapper(status: Union[str, Iterable[str]]):
+        class NovaInstance(Mock):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                if isinstance(status, str):
+                    self._i_status = cycle(status)
+                else:
+                    self._i_status = iter(status)
+
+            @property
+            def status(self):
+                return next(self._i_status)
+
+        return NovaInstance()
+
+    return wrapper
+
+
+@pytest.fixture()
+def nova(nova_instance_factory):
+    n = Mock(name="NovaClient")
+    n.servers.create.return_value = nova_instance_factory("active")
+    return n
 
 
 @pytest.fixture()
@@ -116,3 +146,146 @@ def os_api(resource_conf, logger, os_session, nova, neutron, monkeypatch):
 @pytest.fixture()
 def os_api_mock():
     return create_autospec(OSApi)
+
+
+def get_deploy_app_request(
+    app_name="app name",
+    image_id="image id",
+    instance_flavor="instance flavor",
+    add_floating_ip=True,
+    floating_ip_subnet_id="floating ip subnet id",
+    auto_udev=True,
+    user="user",
+    password="password",
+    public_ip="public ip",
+    action_id="action id",
+) -> str:
+    d_path = "Openstack Shell 2G.OpenStack Deploy Glance Image 2G"
+    deployment_conf = {
+        "deploymentPath": d_path,
+        "attributes": [
+            {
+                "attributeName": f"{d_path}.Availability Zone",
+                "attributeValue": "",
+                "type": "attribute",
+            },
+            {
+                "attributeName": f"{d_path}.Image ID",
+                "attributeValue": image_id,
+                "type": "attribute",
+            },
+            {
+                "attributeName": f"{d_path}.Instance Flavor",
+                "attributeValue": instance_flavor,
+                "type": "attribute",
+            },
+            {
+                "attributeName": f"{d_path}.Add Floating IP",
+                "attributeValue": add_floating_ip,
+                "type": "attribute",
+            },
+            {
+                "attributeName": f"{d_path}.Autoload",
+                "attributeValue": True,
+                "type": "attribute",
+            },
+            {
+                "attributeName": f"{d_path}.Affinity Group ID",
+                "attributeValue": "",
+                "type": "attribute",
+            },
+            {
+                "attributeName": f"{d_path}.Floating IP Subnet ID",
+                "attributeValue": floating_ip_subnet_id,
+                "type": "attribute",
+            },
+            {
+                "attributeName": f"{d_path}.Auto udev",
+                "attributeValue": auto_udev,
+                "type": "attribute",
+            },
+            {
+                "attributeName": f"{d_path}.Wait for IP",
+                "attributeValue": "False",
+                "type": "attribute",
+            },
+        ],
+        "type": "deployAppDeploymentInfo",
+    }
+    app_resource_conf = {
+        "attributes": [
+            {
+                "attributeName": "Password",
+                "attributeValue": password,
+                "type": "attribute",
+            },
+            {
+                "attributeName": "Public IP",
+                "attributeValue": public_ip,
+                "type": "attribute",
+            },
+            {
+                "attributeName": "User",
+                "attributeValue": user,
+                "type": "attribute",
+            },
+        ],
+        "type": "appResourceInfo",
+    }
+    return json.dumps(
+        {
+            "driverRequest": {
+                "actions": [
+                    {
+                        "actionParams": {
+                            "appName": app_name,
+                            "deployment": deployment_conf,
+                            "appResource": app_resource_conf,
+                            "type": "deployAppParams",
+                        },
+                        "actionId": action_id,
+                        "type": "deployApp",
+                    }
+                ]
+            }
+        }
+    )
+
+
+@pytest.fixture()
+def deploy_app_request_factory():
+    return get_deploy_app_request
+
+
+@pytest.fixture()
+def deploy_app(deploy_app_request_factory, cs_api):
+    request = deploy_app_request_factory()
+
+    DeployVMRequestActions.register_deployment_path(OSNovaImgDeployApp)
+    request_actions = DeployVMRequestActions.from_request(request, cs_api)
+    return request_actions.deploy_app
+
+
+@pytest.fixture()
+def cancellation_context_manager():
+    context = Mock(name="cancellation context", is_cancelled=False)
+    return CancellationContextManager(context)
+
+
+@pytest.fixture()
+def uuid_mocked(monkeypatch):
+    uid = uuid.uuid4()
+
+    def _uuid4():
+        return uid
+
+    monkeypatch.setattr(uuid, "uuid4", _uuid4)
+    return uid
+
+
+@pytest.fixture
+def sleepless(monkeypatch):
+    def sleep(_):
+        pass
+
+    monkeypatch.setattr(time, "sleep", sleep)
