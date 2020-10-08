@@ -40,6 +40,8 @@ class DeployAppFromNovaImgFlow(AbstractDeployFlow):
                     floating_ip = self._create_floating_ip(deploy_app, instance)
                 else:
                     floating_ip = ""
+                if deploy_app.inbound_ports:
+                    self._add_security_group(deploy_app, instance)
 
                 net_name = self._api.get_network_name(
                     self._resource_conf.os_mgmt_net_id
@@ -77,6 +79,15 @@ class DeployAppFromNovaImgFlow(AbstractDeployFlow):
             self._cancellation_manager,
             self._api,
             self._resource_conf,
+            deploy_app,
+            instance,
+        ).execute()
+
+    def _add_security_group(self, deploy_app: OSNovaImgDeployApp, instance: NovaServer):
+        return commands.CreateSecurityGroup(
+            self._rollback_manager,
+            self._cancellation_manager,
+            self._api,
             deploy_app,
             instance,
         ).execute()
