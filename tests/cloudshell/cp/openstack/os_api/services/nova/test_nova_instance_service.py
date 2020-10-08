@@ -1,4 +1,5 @@
 import pytest
+from novaclient import exceptions as nova_exceptions
 
 from cloudshell.cp.openstack.exceptions import InstanceErrorStateException
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp
@@ -7,6 +8,12 @@ from cloudshell.cp.openstack.os_api.services.nova.nova_instance_service import (
     NovaInstanceStatus,
     _get_udev_rules,
 )
+
+
+@pytest.fixture()
+def nova_service(nova_instance_factory, nova, logger):
+    inst = nova_instance_factory("active")
+    return NovaService(inst, nova, logger)
 
 
 @pytest.mark.parametrize(
@@ -87,3 +94,81 @@ def test_create_instance_failed(
         NovaService.create_instance(
             nova, resource_conf, deploy_app, cancellation_context_manager, logger
         )
+
+
+def test_get_with_id(nova, logger):
+    instance_id = "id"
+
+    NovaService.get_with_id(nova, instance_id, logger)
+
+    nova.servers.find.assert_called_once_with(id=instance_id)
+
+
+def test_get_with_id_not_found(nova, logger):
+    instance_id = "id"
+    nova.servers.find.side_effect = nova_exceptions.NotFound("404")
+
+    with pytest.raises(nova_exceptions.NotFound):
+        NovaService.get_with_id(nova, instance_id, logger)
+
+
+def test_power_on(nova_instance_factory, nova, logger, sleepless):
+    inst = nova_instance_factory(("building", "building", "active", "active"))
+    ns = NovaService(inst, nova, logger)
+
+    ns.power_on()
+
+    inst.start.assert_called_once_with()
+    inst.get.assert_called_once_with()
+
+
+def test_power_off(nova_instance_factory, nova, logger, sleepless):
+    inst = nova_instance_factory(("active", "active", "shutoff", "shutoff"))
+    ns = NovaService(inst, nova, logger)
+
+    ns.power_off()
+
+    inst.stop.assert_called_once_with()
+    inst.get.assert_called_once_with()
+
+
+def test_attach_interface(nova_service):
+    net_id = "net id"
+
+    nova_service.attach_interface(net_id)
+
+    nova_service._nova.servers.interface_attach.assert_called_once_with(
+        nova_service.instance, port_id=None, net_id=net_id, fixed_ip=None
+    )
+
+
+def test_detach_nic_from_instance(nova_service):
+    port_id = "port id"
+
+    nova_service.detach_nic_from_instance(port_id)
+
+    nova_service._nova.servers.interface_detach.assert_called_once_with(
+        nova_service.instance, port_id
+    )
+
+
+def test_get_instance_image(nova_service):
+    nova_service.get_instance_image()
+
+    nova_service._nova.glance.find_image.assert_called_once_with(
+        nova_service.instance.image["id"]
+    )
+
+
+def test_get_instance_flavor(nova_service):
+    nova_service.get_instance_flavor()
+
+    nova_service._nova.flavors.get.assert_called_once_with(
+        nova_service.instance.flavor["id"]
+    )
+
+
+def test_terminate(nova_service):
+    nova_service.terminate()
+
+    nova_service.instance.delete.assert_called_once_with()
