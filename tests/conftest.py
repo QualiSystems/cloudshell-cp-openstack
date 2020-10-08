@@ -4,7 +4,7 @@ import uuid
 from itertools import cycle
 from logging import Logger
 from typing import Iterable, Union
-from unittest.mock import Mock, create_autospec
+from unittest.mock import MagicMock, Mock, create_autospec
 
 import pytest
 from keystoneauth1.session import Session as KeyStoneSession
@@ -105,7 +105,7 @@ def os_session():
 @pytest.fixture()
 def nova_instance_factory():
     def wrapper(status: Union[str, Iterable[str]]):
-        class NovaInstance(Mock):
+        class NovaInstance(MagicMock):
             fault = {"message": "fault message"}
 
             def __init__(self, *args, **kwargs):
