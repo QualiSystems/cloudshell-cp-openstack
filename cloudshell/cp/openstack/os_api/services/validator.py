@@ -94,7 +94,7 @@ def _validate_floating_ip_subnet(api: "OSApi", floating_ip_subnet_id: str):
 
 def _validate_vlan_type(api: "OSApi", vlan_type: str, os_physical_int: str):
     e_msg = ""
-    for retry in range(10):
+    for retry in range(1, 11):
         data = {
             "provider:network_type": vlan_type.lower(),
             "name": "qs_autoload_validation_net",
