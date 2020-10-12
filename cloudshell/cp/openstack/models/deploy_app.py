@@ -37,9 +37,10 @@ class SecurityGroupRule:
             f"Should be [cidr:][protocol:]port-or-port-range"
         )
         parts = string.strip().split(":")
-        if not parts:
+        try:
+            min_, max_ = get_port_range(parts[-1])
+        except ValueError:
             raise ValueError(emsg)
-        min_, max_ = get_port_range(parts[-1])
 
         cidr = protocol = None
         if len(parts) == 3:
