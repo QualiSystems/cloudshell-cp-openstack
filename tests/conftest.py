@@ -112,7 +112,7 @@ def nova_instance_factory():
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 if isinstance(status, str):
-                    self._i_status = cycle(status)
+                    self._i_status = cycle((status,))
                 else:
                     self._i_status = iter(status)
 
