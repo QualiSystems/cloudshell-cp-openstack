@@ -23,6 +23,7 @@ from cloudshell.shell.core.driver_context import (
 from cloudshell.cp.openstack.constants import SHELL_NAME
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp
 from cloudshell.cp.openstack.os_api.api import OSApi
+from cloudshell.cp.openstack.os_api.commands.rollback import RollbackCommandsManager
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
 
@@ -272,6 +273,11 @@ def deploy_app(deploy_app_request_factory, cs_api):
 def cancellation_context_manager():
     context = Mock(name="cancellation context", is_cancelled=False)
     return CancellationContextManager(context)
+
+
+@pytest.fixture()
+def rollback_manager(logger):
+    return RollbackCommandsManager(logger)
 
 
 @pytest.fixture()
