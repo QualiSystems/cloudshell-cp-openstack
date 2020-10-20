@@ -11,9 +11,8 @@ from cloudshell.cp.openstack.os_api.services.nova.nova_instance_service import (
 
 
 @pytest.fixture()
-def nova_service(nova_instance_factory, nova, logger):
-    inst = nova_instance_factory("active")
-    return NovaService(inst, nova, logger)
+def nova_service(instance, nova, logger):
+    return NovaService(instance, nova, logger)
 
 
 @pytest.mark.parametrize(
@@ -38,14 +37,11 @@ def test_create_instance(
     deploy_app: OSNovaImgDeployApp,
     cancellation_context_manager,
     uuid_mocked,
-    sleepless,
-    nova_instance_factory,
+    instance,
 ):
     availability_zone = "zone"
     affinity_group_id = "group id"
-    nova.servers.create.return_value = nova_instance_factory(
-        ["building", "active", "active"]
-    )
+    instance.status = ["building", "active", "active"]
     deploy_app.availability_zone = availability_zone
     deploy_app.affinity_group_id = affinity_group_id
 
@@ -83,12 +79,9 @@ def test_create_instance_failed(
     deploy_app: OSNovaImgDeployApp,
     cancellation_context_manager,
     uuid_mocked,
-    sleepless,
-    nova_instance_factory,
+    instance,
 ):
-    nova.servers.create.return_value = nova_instance_factory(
-        ["building", "building", "error", "error"]
-    )
+    instance.status = ["building", "building", "error", "error"]
 
     with pytest.raises(InstanceErrorStateException, match="fault message"):
         NovaService.create_instance(
@@ -112,24 +105,24 @@ def test_get_with_id_not_found(nova, logger):
         NovaService.get_with_id(nova, instance_id, logger)
 
 
-def test_power_on(nova_instance_factory, nova, logger, sleepless):
-    inst = nova_instance_factory(("building", "building", "active", "active"))
-    ns = NovaService(inst, nova, logger)
+def test_power_on(instance, nova, logger):
+    instance.status = ("building", "building", "active", "active")
+    ns = NovaService(instance, nova, logger)
 
     ns.power_on()
 
-    inst.start.assert_called_once_with()
-    inst.get.assert_called_once_with()
+    instance.start.assert_called_once_with()
+    instance.get.assert_called_once_with()
 
 
-def test_power_off(nova_instance_factory, nova, logger, sleepless):
-    inst = nova_instance_factory(("active", "active", "shutoff", "shutoff"))
-    ns = NovaService(inst, nova, logger)
+def test_power_off(instance, nova, logger):
+    instance.status = ("active", "active", "shutoff", "shutoff")
+    ns = NovaService(instance, nova, logger)
 
     ns.power_off()
 
-    inst.stop.assert_called_once_with()
-    inst.get.assert_called_once_with()
+    instance.stop.assert_called_once_with()
+    instance.get.assert_called_once_with()
 
 
 def test_attach_interface(nova_service):

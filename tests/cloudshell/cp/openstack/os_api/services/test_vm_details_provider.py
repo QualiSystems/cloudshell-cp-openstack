@@ -3,8 +3,7 @@ from unittest.mock import Mock
 from cloudshell.cp.openstack.os_api.services.vm_details_provider import create
 
 
-def test_create(nova_instance_factory, os_api, neutron):
-    instance = nova_instance_factory("active")
+def test_create(instance, os_api, neutron):
     net_id = "net id"
     interface = Mock(net_id=net_id)
     instance.interface_list.return_value = [interface]
