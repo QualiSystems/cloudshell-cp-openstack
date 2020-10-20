@@ -8,11 +8,6 @@ from cloudshell.cp.openstack.os_api.services.nova.nova_instance_service import (
 )
 
 
-@pytest.fixture()
-def instance(nova_instance_factory):
-    return nova_instance_factory("active")
-
-
 def test_create_instance(
     os_api,
     deploy_app,
@@ -20,7 +15,6 @@ def test_create_instance(
     nova,
     uuid_mocked,
     resource_conf,
-    sleepless,
 ):
     os_api.create_instance(deploy_app, cancellation_context_manager)
 
@@ -123,8 +117,8 @@ def test_get_instance(os_api, nova):
     assert inst == nova.servers.find()
 
 
-def test_power_on_instance(os_api, nova_instance_factory, sleepless):
-    instance = nova_instance_factory(["building", "building", "active", "active"])
+def test_power_on_instance(os_api, instance):
+    instance.status = ["building", "building", "active", "active"]
 
     os_api.power_on_instance(instance)
 
@@ -132,8 +126,8 @@ def test_power_on_instance(os_api, nova_instance_factory, sleepless):
     instance.get.assert_called_once_with()
 
 
-def test_power_off_instance(os_api, nova_instance_factory, sleepless):
-    instance = nova_instance_factory(["active", "active", "shutoff", "shutoff"])
+def test_power_off_instance(os_api, instance):
+    instance.status = ["active", "active", "shutoff", "shutoff"]
 
     os_api.power_off_instance(instance)
 

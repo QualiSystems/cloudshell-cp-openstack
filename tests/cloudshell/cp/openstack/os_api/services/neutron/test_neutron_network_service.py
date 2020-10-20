@@ -99,7 +99,7 @@ def test_create_network(neutron_service, neutron):
     neutron.create_network.assert_called_once_with(new_net_dict)
 
 
-def test_remove_network(neutron_service, neutron, sleepless):
+def test_remove_network(neutron_service, neutron):
     net_id = "net id"
     neutron.list_ports.side_effect = (
         {"ports": [{"id": "port id 1"}, {"id": "port id 2"}]},
@@ -119,7 +119,7 @@ def test_remove_network(neutron_service, neutron, sleepless):
     neutron.delete_network.assert_called_once_with(net_id)
 
 
-def test_remove_network_more_than_one_port(neutron_service, neutron, sleepless):
+def test_remove_network_more_than_one_port(neutron_service, neutron):
     net_id = "net id"
     neutron.list_ports.return_value = {
         "ports": [{"id": "port id 1"}, {"id": "port id 2"}]
@@ -138,9 +138,7 @@ def test_remove_network_more_than_one_port(neutron_service, neutron, sleepless):
     neutron.delete_network.assert_called_once_with(net_id)
 
 
-def test_remove_network_subnet_and_network_not_found(
-    neutron_service, neutron, sleepless
-):
+def test_remove_network_subnet_and_network_not_found(neutron_service, neutron):
     net_id = "net id"
     neutron.list_ports.return_value = {"ports": [{"id": "port id 1"}]}
     neutron.list_subnets.side_effect = SubnetNotFoundException

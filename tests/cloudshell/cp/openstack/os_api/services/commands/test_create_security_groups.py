@@ -15,9 +15,8 @@ def test_create_security_group(
     deploy_app,
     rollback_manager,
     cancellation_context_manager,
-    nova_instance_factory,
+    instance,
 ):
-    instance = nova_instance_factory("active")
     command = CreateSecurityGroup(
         rollback_manager,
         cancellation_context_manager,
@@ -39,9 +38,8 @@ def test_rollback_create_security_groups(
     deploy_app,
     rollback_manager,
     cancellation_context_manager,
-    nova_instance_factory,
+    instance,
 ):
-    instance = nova_instance_factory("active")
     command = CreateSecurityGroup(
         rollback_manager,
         cancellation_context_manager,

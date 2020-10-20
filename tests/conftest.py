@@ -11,17 +11,18 @@ from keystoneauth1.session import Session as KeyStoneSession
 from neutronclient.v2_0.client import Client as NeutronClient
 
 from cloudshell.cp.core.cancellation_manager import CancellationContextManager
-from cloudshell.cp.core.request_actions import DeployVMRequestActions
+from cloudshell.cp.core.request_actions import DeployedVMActions, DeployVMRequestActions
 from cloudshell.shell.core.driver_context import (
     AppContext,
     ConnectivityContext,
     ReservationContextDetails,
     ResourceCommandContext,
     ResourceContextDetails,
+    ResourceRemoteCommandContext,
 )
 
 from cloudshell.cp.openstack.constants import SHELL_NAME
-from cloudshell.cp.openstack.models import OSNovaImgDeployApp
+from cloudshell.cp.openstack.models import OSNovaImgDeployApp, OSNovaImgDeployedApp
 from cloudshell.cp.openstack.os_api.api import OSApi
 from cloudshell.cp.openstack.os_api.commands.rollback import RollbackCommandsManager
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
@@ -33,8 +34,8 @@ def logger():
 
 
 @pytest.fixture()
-def resource_context() -> ResourceCommandContext:
-    connectivity = ConnectivityContext(
+def connectivity_context():
+    return ConnectivityContext(
         server_address="localhost",
         quali_api_port="9000",
         cloudshell_version="2020.1",
@@ -42,7 +43,11 @@ def resource_context() -> ResourceCommandContext:
         cloudshell_api_port="8029",
         admin_auth_token="token",
     )
-    resource_context_details = ResourceContextDetails(
+
+
+@pytest.fixture()
+def resource_context_details():
+    return ResourceContextDetails(
         address="NA",
         app_context=AppContext(app_request_json="", deployed_app_json=""),
         description="",
@@ -69,7 +74,11 @@ def resource_context() -> ResourceCommandContext:
             f"{SHELL_NAME}.Controller URL": "http://openstack.example/identity",
         },
     )
-    reservation_context = ReservationContextDetails(
+
+
+@pytest.fixture()
+def reservation_context_details():
+    return ReservationContextDetails(
         **{
             "domain": "Global",
             "owner_email": None,
@@ -83,8 +92,135 @@ def resource_context() -> ResourceCommandContext:
             "running_user": "admin",
         },
     )
+
+
+@pytest.fixture()
+def resource_context(
+    connectivity_context, resource_context_details, reservation_context_details
+):
     return ResourceCommandContext(
-        connectivity, resource_context_details, reservation_context, []
+        connectivity_context, resource_context_details, reservation_context_details, []
+    )
+
+
+@pytest.fixture()
+def resource_remote_context(
+    connectivity_context, resource_context_details, reservation_context_details
+):
+    d_path = "Openstack Shell 2G.OpenStack Deploy Glance Image 2G."
+    deployment_service = {
+        "cloudProviderName": "OS",
+        "name": "Openstack Shell 2G.OpenStack Deploy Glance Image 2G",
+        "model": "Openstack Shell 2G.OpenStack Deploy Glance Image 2G",
+        "driver": None,
+        "attributes": [
+            {
+                "name": f"{d_path}Availability Zone",
+                "value": "",
+            },
+            {
+                "name": f"{d_path}Image ID",
+                "value": "image id",
+            },
+            {
+                "name": f"{d_path}Instance Flavor",
+                "value": "flavor name",
+            },
+            {
+                "name": f"{d_path}Add Floating IP",
+                "value": "True",
+            },
+            {
+                "name": f"{d_path}Autoload",
+                "value": "True",
+            },
+            {
+                "name": f"{d_path}Affinity Group ID",
+                "value": "",
+            },
+            {
+                "name": f"{d_path}Floating IP Subnet ID",
+                "value": "",
+            },
+            {
+                "name": f"{d_path}Auto udev",
+                "value": "True",
+            },
+            {
+                "name": f"{d_path}Wait for IP",
+                "value": "False",
+            },
+        ],
+    }
+    app_context = AppContext(
+        **{
+            "app_request_json": json.dumps(
+                {
+                    "name": "app name",
+                    "description": None,
+                    "logicalResource": {
+                        "family": "Generic App Family",
+                        "model": "Generic App Model",
+                        "driver": None,
+                        "description": "",
+                        "attributes": [
+                            {"name": "Password", "value": "password"},
+                            {"name": "Public IP", "value": ""},
+                            {"name": "User", "value": ""},
+                        ],
+                    },
+                    "deploymentService": deployment_service,
+                }
+            ),
+            "deployed_app_json": json.dumps(
+                {
+                    "name": "app-name-cs",
+                    "family": "Generic App Family",
+                    "model": "Generic App Model",
+                    "address": "app ip address",
+                    "attributes": [
+                        {"name": "Password", "value": "password"},
+                        {"name": "User", "value": ""},
+                        {"name": "Public IP", "value": "8.8.8.8"},
+                    ],
+                    "vmdetails": {
+                        "id": "app id",
+                        "cloudProviderId": "cloud provider id",
+                        "uid": "app uid",
+                        "vmCustomParams": [],
+                    },
+                }
+            ),
+        }
+    )
+    remote_endpoints = [
+        ResourceContextDetails(
+            **{
+                "name": "app-name-cs",
+                "family": "Generic App Family",
+                "networks_info": None,
+                "app_context": app_context,
+                "id": "app id",
+                "shell_standard_version": None,
+                "address": "app ip address",
+                "shell_standard": None,
+                "attributes": {
+                    "Password": "password",
+                    "User": "",
+                    "Public IP": "",
+                },
+                "model": "Generic App Model",
+                "type": "Resource",
+                "fullname": "app-name-cs",
+                "description": None,
+            }
+        )
+    ]
+    return ResourceRemoteCommandContext(
+        connectivity_context,
+        resource_context_details,
+        reservation_context_details,
+        remote_endpoints,
     )
 
 
@@ -111,14 +247,21 @@ def nova_instance_factory():
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                if isinstance(status, str):
-                    self._i_status = cycle((status,))
+                self._set_status(status)
+
+            def _set_status(self, val):
+                if isinstance(val, str):
+                    self._i_status = cycle((val,))
                 else:
-                    self._i_status = iter(status)
+                    self._i_status = iter(val)
 
             @property
             def status(self):
                 return next(self._i_status)
+
+            @status.setter
+            def status(self, val):
+                self._set_status(val)
 
         return NovaInstance()
 
@@ -126,9 +269,15 @@ def nova_instance_factory():
 
 
 @pytest.fixture()
-def nova(nova_instance_factory):
+def instance(nova_instance_factory):
+    return nova_instance_factory("active")
+
+
+@pytest.fixture()
+def nova(instance):
     n = Mock(name="NovaClient")
-    n.servers.create.return_value = nova_instance_factory("active")
+    n.servers.create.return_value = instance
+    n.servers.find.return_value = instance
     return n
 
 
@@ -212,6 +361,11 @@ def get_deploy_app_request(
                 "attributeValue": "False",
                 "type": "attribute",
             },
+            {
+                "attributeName": f"{d_path}.Inbound Ports",
+                "attributeValue": "22",
+                "type": "attribute",
+            },
         ],
         "type": "deployAppDeploymentInfo",
     }
@@ -261,12 +415,24 @@ def deploy_app_request_factory():
 
 
 @pytest.fixture()
-def deploy_app(deploy_app_request_factory, cs_api):
+def deploy_vm_request_actions(deploy_app_request_factory, cs_api):
     request = deploy_app_request_factory()
 
     DeployVMRequestActions.register_deployment_path(OSNovaImgDeployApp)
-    request_actions = DeployVMRequestActions.from_request(request, cs_api)
-    return request_actions.deploy_app
+    return DeployVMRequestActions.from_request(request, cs_api)
+
+
+@pytest.fixture()
+def deploy_app(deploy_vm_request_actions):
+    return deploy_vm_request_actions.deploy_app
+
+
+@pytest.fixture()
+def deployed_app(resource_remote_context, cs_api):
+    DeployedVMActions.register_deployment_path(OSNovaImgDeployedApp)
+    resource = resource_remote_context.remote_endpoints[0]
+    actions = DeployedVMActions.from_remote_resource(resource, cs_api)
+    return actions.deployed_app
 
 
 @pytest.fixture()
@@ -291,7 +457,7 @@ def uuid_mocked(monkeypatch):
     return uid
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def sleepless(monkeypatch):
     def sleep(_):
         pass
