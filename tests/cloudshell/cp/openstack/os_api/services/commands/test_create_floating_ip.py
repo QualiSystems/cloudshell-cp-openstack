@@ -14,11 +14,10 @@ def test_create_floating_ip(
     os_api,
     resource_conf,
     deploy_app,
-    nova_instance_factory,
+    instance,
     rollback_manager,
     cancellation_context_manager,
 ):
-    instance = nova_instance_factory("active")
     port_id = "port id"
     instance.interface_list.return_value = [Mock(port_id=port_id)]
     command = CreateFloatingIP(
@@ -42,12 +41,11 @@ def test_create_floating_ip_from_r_conf(
     os_api,
     resource_conf,
     deploy_app,
-    nova_instance_factory,
+    instance,
     rollback_manager,
     cancellation_context_manager,
 ):
     deploy_app.floating_ip_subnet_id = ""
-    instance = nova_instance_factory("active")
     port_id = "port id"
     instance.interface_list.return_value = [Mock(port_id=port_id)]
     command = CreateFloatingIP(
@@ -71,11 +69,10 @@ def test_rollback_create_floating_ip(
     os_api,
     resource_conf,
     deploy_app,
-    nova_instance_factory,
+    instance,
     rollback_manager,
     cancellation_context_manager,
 ):
-    instance = nova_instance_factory("active")
     command = CreateFloatingIP(
         rollback_manager,
         cancellation_context_manager,
