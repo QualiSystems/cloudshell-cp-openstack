@@ -54,7 +54,7 @@ def resource_context_details():
         family="Cloud Provider",
         fullname="OpenStack Cloud Provider",
         id="a95027f6-98bf-4177-8d40-d610f0179107",
-        model="OpenStack",
+        model=SHELL_NAME,
         name="OpenStack Cloud Provider",
         networks_info=None,
         shell_standard="",
@@ -107,11 +107,11 @@ def resource_context(
 def resource_remote_context(
     connectivity_context, resource_context_details, reservation_context_details
 ):
-    d_path = "Openstack Shell 2G.OpenStack Deploy Glance Image 2G."
+    d_path = f"{SHELL_NAME}.OpenStack Deploy Glance Image 2G."
     deployment_service = {
         "cloudProviderName": "OS",
-        "name": "Openstack Shell 2G.OpenStack Deploy Glance Image 2G",
-        "model": "Openstack Shell 2G.OpenStack Deploy Glance Image 2G",
+        "name": f"{SHELL_NAME}.OpenStack Deploy Glance Image 2G",
+        "model": f"{SHELL_NAME}.OpenStack Deploy Glance Image 2G",
         "driver": None,
         "attributes": [
             {
@@ -312,7 +312,7 @@ def get_deploy_app_request(
     public_ip="public ip",
     action_id="action id",
 ) -> str:
-    d_path = "Openstack Shell 2G.OpenStack Deploy Glance Image 2G"
+    d_path = f"{SHELL_NAME}.OpenStack Deploy Glance Image 2G"
     deployment_conf = {
         "deploymentPath": d_path,
         "attributes": [
