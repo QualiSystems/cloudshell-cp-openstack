@@ -13,7 +13,7 @@ def get_os_session(resource_config: OSResourceConfig, logger: Logger) -> Session
         username=resource_config.user,
         password=resource_config.password,
         project_name=resource_config.os_project_name,
-        user_domain_id=resource_config.os_domain_name,
-        project_domain_id=resource_config.os_domain_name,
+        user_domain_name=resource_config.os_domain_name,
+        project_domain_name=resource_config.os_domain_name,
     )
     return Session(auth=auth, verify=False)
