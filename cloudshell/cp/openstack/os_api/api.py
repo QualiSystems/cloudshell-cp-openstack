@@ -102,9 +102,11 @@ class OSApi:
     def remove_network(self, net_id: str):
         return self._neutron_service.remove_network(net_id)
 
-    def get_or_create_net_with_segmentation_id(self, id_: int) -> dict:
+    def get_or_create_net_with_segmentation_id(
+        self, id_: int, qnq: bool = False
+    ) -> dict:
         return self._neutron_service.get_or_create_net_with_segmentation_id(
-            id_, self._resource_conf, self.NET_WITH_SEGMENTATION_PREFIX
+            id_, self._resource_conf, self.NET_WITH_SEGMENTATION_PREFIX, qnq
         )
 
     def get_net_with_segmentation_id(self, id_: int) -> dict:

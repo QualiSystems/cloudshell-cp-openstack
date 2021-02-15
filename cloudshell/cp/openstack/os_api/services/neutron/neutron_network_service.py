@@ -74,18 +74,26 @@ class NeutronService:
             pass
 
     def get_or_create_net_with_segmentation_id(
-        self, segmentation_id: int, resource_conf: OSResourceConfig, net_prefix: str
+        self,
+        segmentation_id: int,
+        resource_conf: OSResourceConfig,
+        net_prefix: str,
+        qnq: bool = False,
     ) -> dict:
         try:
             net = self._create_net_with_segmentation_id(
-                segmentation_id, resource_conf, net_prefix
+                segmentation_id, resource_conf, net_prefix, qnq
             )
         except neutron_exceptions.Conflict:
             net = self.get_net_with_segmentation(segmentation_id)
         return net
 
     def _create_net_with_segmentation_id(
-        self, segmentation_id: int, resource_conf: OSResourceConfig, net_prefix: str
+        self,
+        segmentation_id: int,
+        resource_conf: OSResourceConfig,
+        net_prefix: str,
+        qnq: bool = False,
     ) -> dict:
         data = {
             "provider:network_type": resource_conf.vlan_type.lower(),
@@ -93,6 +101,8 @@ class NeutronService:
             "name": f"{net_prefix}_{segmentation_id}",
             "admin_state_up": True,
         }
+        if qnq:
+            data["vlan_transparent"] = True
         if resource_conf.vlan_type.lower() == "vlan":
             data["provider:physical_network"] = resource_conf.os_physical_int_name
         return self._neutron.create_network({"network": data})["network"]
