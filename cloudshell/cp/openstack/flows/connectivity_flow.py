@@ -27,7 +27,9 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         c_tag: str,
         vm_uid: str,
     ):
-        net_dict = self._api.get_or_create_net_with_segmentation_id(int(vlan_range))
+        net_dict = self._api.get_or_create_net_with_segmentation_id(
+            int(vlan_range), qnq
+        )
         if not net_dict["subnets"]:
             with self._subnet_lock:
                 self._api.create_subnet(net_dict["id"])

@@ -168,7 +168,9 @@ def test_get_or_create_net_with_segmentation_id(
         segmentation_id, resource_conf, net_prefix
     )
 
-    create_net_mock.assert_called_once_with(segmentation_id, resource_conf, net_prefix)
+    create_net_mock.assert_called_once_with(
+        segmentation_id, resource_conf, net_prefix, False
+    )
     get_net_mock.assert_called_once_with(segmentation_id)
     assert net == get_net_mock()
 
@@ -190,6 +192,30 @@ def test_create_net_with_segmentation_id(neutron_service, neutron, resource_conf
                 "name": f"{net_prefix}_{segmentation_id}",
                 "admin_state_up": True,
                 "provider:physical_network": resource_conf.os_physical_int_name,
+            }
+        }
+    )
+
+
+def test_create_net_with_segmentation_and_qnq(neutron_service, neutron, resource_conf):
+    segmentation_id = 101
+    net_prefix = "net prefix"
+    resource_conf.vlan_type = "vlan"
+    qnq = True
+
+    neutron_service._create_net_with_segmentation_id(
+        segmentation_id, resource_conf, net_prefix, qnq
+    )
+
+    neutron.create_network.assert_called_once_with(
+        {
+            "network": {
+                "provider:network_type": resource_conf.vlan_type,
+                "provider:segmentation_id": segmentation_id,
+                "name": f"{net_prefix}_{segmentation_id}",
+                "admin_state_up": True,
+                "provider:physical_network": resource_conf.os_physical_int_name,
+                "vlan_transparent": True,
             }
         }
     )
