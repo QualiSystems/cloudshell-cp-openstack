@@ -13,6 +13,18 @@ from cloudshell.cp.openstack import constants
 from cloudshell.cp.openstack.utils.models_helper import get_port_range, is_cidr
 
 
+class ResourceAttrName:
+    availability_zone = "Availability Zone"
+    image_id = "Image ID"
+    instance_flavor = "Instance Flavor"
+    add_floating_ip = "Add Floating IP"
+    affinity_group_id = "Affinity Group ID"
+    floating_ip_subnet_id = "Floating IP Subnet ID"
+    auto_udev = "Auto udev"
+    inbound_ports = "Inbound Ports"
+    behavior_during_save = "Behavior during save"
+
+
 class ResourceAttrRODeploymentPath(ResourceAttrRO):
     def __init__(self, name: str, namespace="DEPLOYMENT_PATH"):
         super().__init__(name, namespace)
@@ -31,7 +43,7 @@ class SecurityGroupRule:
     protocol: str = "tcp"
 
     @classmethod
-    def from_str(cls, string: str) -> "SecurityGroupRule":
+    def from_str(cls, string: str) -> SecurityGroupRule:
         emsg = (
             f'Security group rule is not supported format: "{string}".\n'
             f"Should be [cidr:][protocol:]port-or-port-range"
@@ -76,12 +88,16 @@ class ResourceInboundPortsRO(ResourceListAttrRO):
 
 class OSNovaImgDeployApp(DeployApp):
     DEPLOYMENT_PATH = constants.OS_FROM_GLANCE_IMAGE_DEPLOYMENT_PATH
+    ATTR_NAME = ResourceAttrName
 
-    availability_zone = ResourceAttrRODeploymentPath("Availability Zone")
-    image_id = ResourceAttrRODeploymentPath("Image ID")
-    instance_flavor = ResourceAttrRODeploymentPath("Instance Flavor")
-    add_floating_ip = ResourceBoolAttrRODeploymentPath("Add Floating IP")
-    affinity_group_id = ResourceAttrRODeploymentPath("Affinity Group ID")
-    floating_ip_subnet_id = ResourceAttrRODeploymentPath("Floating IP Subnet ID")
-    auto_udev = ResourceBoolAttrRODeploymentPath("Auto udev")
-    inbound_ports = ResourceInboundPortsRO("Inbound Ports")
+    availability_zone = ResourceAttrRODeploymentPath(ATTR_NAME.availability_zone)
+    image_id = ResourceAttrRODeploymentPath(ATTR_NAME.image_id)
+    instance_flavor = ResourceAttrRODeploymentPath(ATTR_NAME.instance_flavor)
+    add_floating_ip = ResourceBoolAttrRODeploymentPath(ATTR_NAME.add_floating_ip)
+    affinity_group_id = ResourceAttrRODeploymentPath(ATTR_NAME.affinity_group_id)
+    floating_ip_subnet_id = ResourceAttrRODeploymentPath(
+        ATTR_NAME.floating_ip_subnet_id
+    )
+    auto_udev = ResourceBoolAttrRODeploymentPath(ATTR_NAME.auto_udev)
+    inbound_ports = ResourceInboundPortsRO(ATTR_NAME.inbound_ports)
+    behavior_during_save = ResourceAttrRODeploymentPath(ATTR_NAME.behavior_during_save)
