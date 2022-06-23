@@ -158,6 +158,9 @@ class NovaService:
         self._logger.info(f"Deleting instance {self.instance.id}")
         self.instance.delete()
 
+    def create_snapshot(self, name: str) -> str:
+        return self.instance.create_image(name)
+
 
 def _get_udev_rules() -> str:
     file_path = Path(__file__).parent / "udev_rules.sh"
