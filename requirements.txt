@@ -5,5 +5,6 @@ cloudshell-shell-connectivity-flow~=2.0
 python-keystoneclient~=4.1
 python-novaclient~=17.2
 python-neutronclient~=7.2
+python-glanceclient~=3.0
 jsonpickle~=1.4
 keystoneauth1~=4.2
