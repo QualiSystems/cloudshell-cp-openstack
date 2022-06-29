@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from logging import Logger
 
@@ -6,10 +8,10 @@ from cloudshell.cp.core.cancellation_manager import CancellationContextManager
 
 class RollbackCommandsManager:
     def __init__(self, logger: Logger):
-        self._commands = []
+        self._commands: list[RollbackCommand] = []
         self._logger = logger
 
-    def register_command(self, command: "RollbackCommand"):
+    def register_command(self, command: RollbackCommand):
         self._commands.append(command)
 
     def __enter__(self):

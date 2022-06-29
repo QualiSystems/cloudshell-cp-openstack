@@ -4,12 +4,12 @@ import ipaddress
 
 
 def get_port_range(port_str: str) -> tuple[int, int]:
-    ports = port_str.split("-", 1)
-    if len(ports) == 1:
-        ports += ports
-    ports = tuple(map(int, ports))
-    min_ = min(ports)
-    max_ = max(ports)
+    ports_str = port_str.split("-", 1)
+    if len(ports_str) == 1:
+        ports_str += ports_str
+    ports_int = tuple(map(int, ports_str))
+    min_ = min(ports_int)
+    max_ = max(ports_int)
     return min_, max_
 
 

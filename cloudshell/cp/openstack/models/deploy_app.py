@@ -37,10 +37,12 @@ class ResourceBoolAttrRODeploymentPath(ResourceBoolAttrRO):
 
 @dataclass
 class SecurityGroupRule:
+    DEFAULT_CIDR = "0.0.0.0/0"
+    DEFAULT_PROTOCOL = "tcp"
     port_range_min: int
     port_range_max: int
-    cidr: str = "0.0.0.0/0"
-    protocol: str = "tcp"
+    cidr: str = DEFAULT_CIDR
+    protocol: str = DEFAULT_PROTOCOL
 
     @classmethod
     def from_str(cls, string: str) -> SecurityGroupRule:
@@ -57,22 +59,22 @@ class SecurityGroupRule:
         cidr = protocol = None
         if len(parts) == 3:
             cidr = parts[0]
-            protocol = parts[1]
+            protocol = parts[1].lower()
         elif len(parts) == 2:
             if is_cidr(parts[0]):
                 cidr = parts[0]
             else:
-                protocol = parts[0]
+                protocol = parts[0].lower()
 
         if cidr is not None and not is_cidr(cidr):
             raise ValueError(emsg)
 
-        kwargs = {"port_range_min": min_, "port_range_max": max_}
-        if protocol:
-            kwargs["protocol"] = protocol.lower()
-        if cidr:
-            kwargs["cidr"] = cidr
-        return cls(**kwargs)
+        return cls(
+            min_,
+            max_,
+            cidr or cls.DEFAULT_CIDR,
+            protocol or cls.DEFAULT_PROTOCOL,
+        )
 
 
 class ResourceInboundPortsRO(ResourceListAttrRO):
