@@ -121,3 +121,13 @@ class NotSupportedConsoleType(OSBaseException):
             f"{self._console_type} is not supported. "
             f"You have to use {list(self._supported_types)}"
         )
+
+
+class IfaceWithNetworkIdNotFound(OSBaseException):
+    def __init__(self, instance, net_id):
+        self.instance = instance
+        self.net_id = net_id
+        super().__init__(
+            f"Not found an interface with network id '{net_id}' in the "
+            f"instance {instance}"
+        )
