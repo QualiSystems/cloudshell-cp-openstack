@@ -29,7 +29,8 @@ class NovaInstanceStatus(Enum):
     OTHER = "_OTHER"
 
     @classmethod
-    def _missing_(cls, value: str):
+    def _missing_(cls, value):
+        assert isinstance(value, str)
         status = cls.__members__.get(value.upper(), cls.OTHER)
         if status is cls.OTHER:
             status._real_value = value
@@ -40,7 +41,6 @@ class NovaService:
     """Implements management of Compute Instances."""
 
     API_VERSION = "2"
-    STATUS = NovaInstanceStatus
     WAIT_DELAY = 10
 
     def __init__(self, instance: NovaServer, nova: NovaClient, logger: Logger):
@@ -69,7 +69,7 @@ class NovaService:
             instance_service = cls(instance, nova, logger)
         try:
             instance_service._wait_for_status(
-                cls.STATUS.ACTIVE, cancellation_manager=cancellation_manager
+                NovaInstanceStatus.ACTIVE, cancellation_manager=cancellation_manager
             )
         except Exception:
             logger.exception("Failed to deploy instance")
@@ -125,26 +125,26 @@ class NovaService:
 
     def _wait_for_status(
         self,
-        status: STATUS,
+        status: NovaInstanceStatus,
         delay: int = WAIT_DELAY,
         cancellation_manager: ContextManager = nullcontext(),
     ):
-        while self.status not in (status, self.STATUS.ERROR):
+        while self.status not in (status, NovaInstanceStatus.ERROR):
             time.sleep(delay)
             with cancellation_manager:
                 self.instance.get()
-        if self.status is self.STATUS.ERROR:
+        if self.status is NovaInstanceStatus.ERROR:
             raise InstanceErrorStateException(self.instance.fault["message"])
 
     def power_on(self):
-        if self.status is not self.STATUS.ACTIVE:
+        if self.status is not NovaInstanceStatus.ACTIVE:
             self.instance.start()
-            self._wait_for_status(self.STATUS.ACTIVE)
+            self._wait_for_status(NovaInstanceStatus.ACTIVE)
 
     def power_off(self):
-        if self.status != self.STATUS.SHUTOFF:
+        if self.status != NovaInstanceStatus.SHUTOFF:
             self.instance.stop()
-            self._wait_for_status(self.STATUS.SHUTOFF)
+            self._wait_for_status(NovaInstanceStatus.SHUTOFF)
 
     def attach_interface(self, net_id: str):
         self._nova.servers.interface_attach(

@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import time
-from ipaddress import IPv4Network, ip_network
+from ipaddress import IPv4Network, IPv6Network, ip_network
 from logging import Logger
-from typing import List, Set
 
 from neutronclient.v2_0.client import Client as NeutronClient
 from neutronclient.v2_0.client import exceptions as neutron_exceptions
@@ -28,7 +29,7 @@ class NeutronService:
             raise NetworkException(f"Found more than one network with kwargs {kwargs}")
         return nets[0]
 
-    def _get_subnets(self, **kwargs) -> List[dict]:
+    def _get_subnets(self, **kwargs) -> list[dict]:
         subnets = self._neutron.list_subnets(**kwargs)["subnets"]
         if not subnets:
             raise SubnetNotFoundException(f"Subnet with kwargs {kwargs} not found")
@@ -118,7 +119,7 @@ class NeutronService:
             raise NetworkNotFoundException(emsg)
         return net
 
-    def create_subnet(self, net_id: str, reserved_networks: List[str]):
+    def create_subnet(self, net_id: str, reserved_networks: list[str]):
         cidr = self._get_unused_cidr(reserved_networks)
         data = {
             "subnet": {
@@ -134,7 +135,7 @@ class NeutronService:
         self._logger.info(f"Created new subnet: {new_subnet}")
         return new_subnet
 
-    def _get_unused_cidr(self, reserved_cidrs: List[str]) -> str:
+    def _get_unused_cidr(self, reserved_cidrs: list[str]) -> str:
         """Gets unused CIDR that excludes the reserved CIDRs.
 
         We basically start with a 10.0. network to find a subnet that does not overlap
@@ -202,7 +203,7 @@ class NeutronService:
         self._neutron.delete_security_group(sg_id)
 
 
-def _generate_subnet(blacklist_subnets: Set[IPv4Network]) -> IPv4Network:
+def _generate_subnet(blacklist_subnets: set[IPv4Network | IPv6Network]) -> IPv4Network:
     first_second_octet_dict = {10: range(256), 172: range(16, 32), 192: (168,)}
     for first_octet, second_octets in first_second_octet_dict.items():
         for second_octet in second_octets:

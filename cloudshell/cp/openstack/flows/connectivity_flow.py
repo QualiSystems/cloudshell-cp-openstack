@@ -49,11 +49,12 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         except NetworkNotFoundException:
             pass
         else:
+            net_id = net_dict["id"]
             instance = self._api.get_instance(vm_uid)
-            port_id = self._api.get_port_id_for_net_name(instance, net_dict["name"])
+            port_id = self._api.get_port_id_with_net_id(instance, net_id)
             self._api.detach_interface_from_instance(instance, port_id)
             with self._subnet_lock:
-                self._api.remove_network(net_dict["id"])
+                self._api.remove_network(net_id)
 
     def _remove_all_vlan_flow(self, full_name: str, vm_uid: str):
         instance = self._api.get_instance(vm_uid)

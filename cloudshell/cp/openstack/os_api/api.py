@@ -16,6 +16,7 @@ from novaclient.v2.servers import Server as NovaServer
 
 from cloudshell.cp.core.cancellation_manager import CancellationContextManager
 
+from cloudshell.cp.openstack.exceptions import IfaceWithNetworkIdNotFound
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp
 from cloudshell.cp.openstack.models.deploy_app import SecurityGroupRule
 from cloudshell.cp.openstack.os_api.services import NeutronService, NovaService
@@ -127,10 +128,12 @@ class OSApi:
     def get_net_with_segmentation_id(self, id_: int) -> dict:
         return self._neutron_service.get_net_with_segmentation(id_)
 
-    def get_port_id_for_net_name(self, instance: NovaServer, net_name: str) -> str:
+    @staticmethod
+    def get_port_id_with_net_id(instance: NovaServer, net_id: str) -> str:
         for interface in instance.interface_list():
-            if self.get_network_name(interface.net_id) == net_name:
+            if interface.net_id == net_id:
                 return interface.port_id
+        raise IfaceWithNetworkIdNotFound(instance, net_id)
 
     def get_all_net_ids_with_segmentation(self, instance: NovaServer):
         net_names = [

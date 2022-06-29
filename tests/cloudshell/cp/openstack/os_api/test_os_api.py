@@ -186,15 +186,11 @@ def test_get_net_with_segmentation_id(os_api, neutron):
 
 
 def test_get_port_id_for_net_name(os_api, instance, neutron):
-    net_name = "net name"
     net_id = "net id"
     port_id = "port id"
     instance.interface_list.return_value = [Mock(net_id=net_id, port_id=port_id)]
-    neutron.list_networks.return_value = {
-        "networks": [{"id": net_id, "name": net_name}]
-    }
 
-    port_id2 = os_api.get_port_id_for_net_name(instance, net_name)
+    port_id2 = os_api.get_port_id_with_net_id(instance, net_id)
 
     instance.interface_list.assert_called_once_with()
     assert port_id2 == port_id

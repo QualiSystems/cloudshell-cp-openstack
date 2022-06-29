@@ -1,4 +1,4 @@
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
 import pytest
 
@@ -88,9 +88,7 @@ def test_remove_vlan_flow(connectivity_flow, neutron, nova, instance):
 
     nova.servers.find.assert_called_once_with(id=vm_uid)
     instance.interface_list.assert_called_once_with()
-    neutron.list_networks.assert_has_calls(
-        [call(**{"provider:segmentation_id": vlan}), call(id=net_id)]
-    )
+    neutron.list_networks.assert_called_once_with(**{"provider:segmentation_id": vlan})
     nova.servers.interface_detach.assert_called_once_with(instance, port_id)
     neutron.delete_network.assert_called_once_with(net_id)
 
