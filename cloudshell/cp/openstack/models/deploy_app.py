@@ -10,19 +10,8 @@ from cloudshell.shell.standards.core.resource_config_entities import (
 )
 
 from cloudshell.cp.openstack import constants
+from cloudshell.cp.openstack.models.attr_names import ResourceAttrName
 from cloudshell.cp.openstack.utils.models_helper import get_port_range, is_cidr
-
-
-class ResourceAttrName:
-    availability_zone = "Availability Zone"
-    image_id = "Image ID"
-    instance_flavor = "Instance Flavor"
-    add_floating_ip = "Add Floating IP"
-    affinity_group_id = "Affinity Group ID"
-    floating_ip_subnet_id = "Floating IP Subnet ID"
-    auto_udev = "Auto udev"
-    inbound_ports = "Inbound Ports"
-    behavior_during_save = "Behavior during save"
 
 
 class ResourceAttrRODeploymentPath(ResourceAttrRO):

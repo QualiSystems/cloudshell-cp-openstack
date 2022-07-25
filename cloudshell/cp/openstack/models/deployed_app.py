@@ -5,6 +5,7 @@ from cloudshell.shell.standards.core.resource_config_entities import (
 )
 
 from cloudshell.cp.openstack import constants
+from cloudshell.cp.openstack.models.attr_names import ResourceAttrName
 
 
 class ResourceAttrRODeploymentPath(ResourceAttrRO):
@@ -19,11 +20,14 @@ class ResourceBoolAttrRODeploymentPath(ResourceBoolAttrRO):
 
 class OSNovaImgDeployedApp(DeployedApp):
     DEPLOYMENT_PATH = constants.OS_FROM_GLANCE_IMAGE_DEPLOYMENT_PATH
+    ATTR_NAME = ResourceAttrName
 
-    availability_zone = ResourceAttrRODeploymentPath("Availability Zone")
-    image_id = ResourceAttrRODeploymentPath("Image ID")
-    instance_flavor = ResourceAttrRODeploymentPath("Instance Flavor")
-    add_floating_ip = ResourceBoolAttrRODeploymentPath("Add Floating IP")
-    affinity_group_id = ResourceAttrRODeploymentPath("Affinity Group ID")
-    floating_ip_subnet_id = ResourceAttrRODeploymentPath("Floating IP Subnet ID")
-    auto_udev = ResourceBoolAttrRODeploymentPath("Auto udev")
+    availability_zone = ResourceAttrRODeploymentPath(ATTR_NAME.availability_zone)
+    image_id = ResourceAttrRODeploymentPath(ATTR_NAME.image_id)
+    instance_flavor = ResourceAttrRODeploymentPath(ATTR_NAME.instance_flavor)
+    add_floating_ip = ResourceBoolAttrRODeploymentPath(ATTR_NAME.add_floating_ip)
+    affinity_group_id = ResourceAttrRODeploymentPath(ATTR_NAME.affinity_group_id)
+    floating_ip_subnet_id = ResourceAttrRODeploymentPath(
+        ATTR_NAME.floating_ip_subnet_id
+    )
+    auto_udev = ResourceBoolAttrRODeploymentPath(ATTR_NAME.auto_udev)
