@@ -130,8 +130,17 @@ class OSApi:
             net_id, self._resource_conf.os_reserved_networks
         )
 
-    def attach_interface_to_instance(self, instance: NovaServer, net_id: str):
-        self._get_nova_service(instance).attach_interface(net_id)
+    def attach_interface_to_instance(
+        self,
+        instance: NovaServer,
+        *,
+        net_id: str | None = None,
+        port_id: str | None = None,
+    ) -> None:
+        assert port_id or net_id
+        self._get_nova_service(instance).attach_interface(
+            port_id=port_id, net_id=net_id
+        )
 
     def detach_interface_from_instance(self, instance: NovaServer, net_id: str):
         self._get_nova_service(instance).detach_nic_from_instance(net_id)

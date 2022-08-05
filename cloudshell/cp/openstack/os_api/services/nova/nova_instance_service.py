@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import time
 import uuid
 from contextlib import nullcontext
@@ -146,10 +148,19 @@ class NovaService:
             self.instance.stop()
             self._wait_for_status(self.STATUS.SHUTOFF)
 
-    def attach_interface(self, net_id: str):
-        self._nova.servers.interface_attach(
-            self.instance, port_id=None, net_id=net_id, fixed_ip=None
-        )
+    def attach_interface(
+        self, *, net_id: str | None = None, port_id: str | None = None
+    ) -> None:
+        assert port_id or net_id
+
+        if port_id:
+            self._nova.servers.interface_attach(
+                self.instance, port_id=port_id, net_id=None, fixed_ip=None
+            )
+        else:
+            self._nova.servers.interface_attach(
+                self.instance, port_id=None, net_id=net_id, fixed_ip=None
+            )
 
     def detach_nic_from_instance(self, port_id: str):
         self._nova.servers.interface_detach(self.instance, port_id)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Iterable
 
 
@@ -23,6 +25,36 @@ class SubnetNotFoundException(NetworkException):
 
 class FreeSubnetIsNotFoundException(NetworkException):
     """Free subnet isn't found exception."""
+
+
+class PortNotFound(NetworkException):
+    def __init__(self, *, id_: str | None = None, name: str | None = None):
+        if id_:
+            msg = f"Port with id '{id_}' not found"
+        else:
+            msg = f"Port with name '{name}' not found"
+
+        super().__init__(msg)
+
+
+class TrunkNotFound(NetworkException):
+    def __init__(self, *, id_: str | None = None, name: str | None = None):
+        if id_:
+            msg = f"Trunk with id '{id_}' not found"
+        else:
+            msg = f"Trunk with name '{name}' not found"
+
+        super().__init__(msg)
+
+
+class NetworkNotFound(NetworkException):
+    def __init__(self, *, id_: str | None = None, name: str | None = None):
+        if id_:
+            msg = f"Network with id '{id_}' not found"
+        else:
+            msg = f"Network with name '{name}' not found"
+
+        super().__init__(msg)
 
 
 class NotSupportedConsoleType(OSBaseException):
