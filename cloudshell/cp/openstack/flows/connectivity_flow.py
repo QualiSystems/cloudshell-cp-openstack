@@ -5,6 +5,9 @@ from cloudshell.shell.flows.connectivity.basic_flow import AbstractConnectivityF
 
 from cloudshell.cp.openstack.exceptions import NetworkNotFoundException
 from cloudshell.cp.openstack.os_api.api import OSApi
+from cloudshell.cp.openstack.os_api.os_api_models.network import Network
+from cloudshell.cp.openstack.os_api.os_api_models.port import Port
+from cloudshell.cp.openstack.os_api.os_api_models.trunk import Trunk
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
 
@@ -36,7 +39,17 @@ class ConnectivityFlow(AbstractConnectivityFlow):
 
         try:
             instance = self._api.get_instance(vm_uid)
-            self._api.attach_interface_to_instance(instance, net_dict["id"])
+        except Exception:  # todo do normal rollback, we should remove trunk also
+            self._api.remove_network(net_dict["id"])
+            raise
+
+        try:
+            if port_mode == "trunk":
+                port = self._create_trunk_port(instance.name, net_dict)
+                # todo what if it already connected??
+                self._api.attach_interface_to_instance(instance, port_id=port.id)
+            else:
+                self._api.attach_interface_to_instance(instance, net_id=net_dict["id"])
         except Exception:
             self._api.remove_network(net_dict["id"])
             raise
@@ -63,3 +76,25 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         for net_id in net_ids:
             with self._subnet_lock:
                 self._api.remove_network(net_id)
+
+    def _create_trunk_port(self, instance_name: str, net_dict: dict) -> Port:
+        neutron = self._api._neutron
+        vlan_network = Network.from_dict(neutron, net_dict)
+        mgmt_network = Network.get(neutron, self._resource_conf.os_mgmt_net_id)
+        prefix = instance_name[:16]
+
+        trunk_port_name = f"{prefix}-trunk-port"
+        # todo use trunk network id
+        trunk_port = Port.find_or_create(neutron, trunk_port_name, mgmt_network)
+
+        trunk_name = f"{prefix}-trunk"
+        trunk = Trunk.find_or_create(neutron, trunk_name, trunk_port)
+
+        sub_port_name = f"{prefix}-sub-port-{vlan_network.segmentation_id}"
+        sub_port = Port.find_or_create(
+            neutron, sub_port_name, vlan_network, trunk_port.mac_address
+        )
+
+        trunk.add_sub_port(sub_port)
+
+        return trunk_port
