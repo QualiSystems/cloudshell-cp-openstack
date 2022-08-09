@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
+
+if TYPE_CHECKING:
+    from cloudshell.cp.openstack.os_api.models import Network
 
 
 class OSBaseException(Exception):
@@ -23,12 +26,25 @@ class SubnetNotFoundException(NetworkException):
     """Subnet not found exception."""
 
 
-class FreeSubnetIsNotFoundException(NetworkException):
-    """Free subnet isn't found exception."""
+class FreeSubnetIsNotFound(NetworkException):
+    def __init__(self):
+        super().__init__("All Subnets Exhausted")
+
+
+class InstanceNotFound(OSBaseException):
+    def __init__(self, *, id_: str | None = None, name: str | None = None):
+        assert id_ or name
+        if id_:
+            msg = f"Instance with id '{id_}' not found"
+        else:
+            msg = f"Instance with name '{name}' not found"
+
+        super().__init__(msg)
 
 
 class PortNotFound(NetworkException):
     def __init__(self, *, id_: str | None = None, name: str | None = None):
+        assert id_ or name
         if id_:
             msg = f"Port with id '{id_}' not found"
         else:
@@ -39,6 +55,7 @@ class PortNotFound(NetworkException):
 
 class TrunkNotFound(NetworkException):
     def __init__(self, *, id_: str | None = None, name: str | None = None):
+        assert id_ or name
         if id_:
             msg = f"Trunk with id '{id_}' not found"
         else:
@@ -48,11 +65,36 @@ class TrunkNotFound(NetworkException):
 
 
 class NetworkNotFound(NetworkException):
-    def __init__(self, *, id_: str | None = None, name: str | None = None):
+    def __init__(
+        self,
+        *,
+        id_: str | None = None,
+        name: str | None = None,
+        vlan_id: int | None = None,
+    ):
+        assert id_ or name or vlan_id
         if id_:
             msg = f"Network with id '{id_}' not found"
-        else:
+        elif name:
             msg = f"Network with name '{name}' not found"
+        else:
+            msg = f"Network with VLAN ID {vlan_id} not found"
+
+        super().__init__(msg)
+
+
+class NetworkInUse(NetworkException):
+    def __init__(self, network: Network):
+        super().__init__(f"{network} in use")
+
+
+class SubnetNotFound(NetworkException):
+    def __init__(self, *, id_: str | None = None, name: str | None = None):
+        assert id_ or name
+        if id_:
+            msg = f"Subnet with id '{id_}' not found"
+        else:
+            msg = f"Subnet with name '{name}' not found"
 
         super().__init__(msg)
 
