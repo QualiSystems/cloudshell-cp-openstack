@@ -37,7 +37,7 @@ class Network:
     id: str  # noqa: A003
     name: str
     network_type: NetworkType
-    segmentation_id: int | None
+    vlan_id: int | None
 
     def __str__(self) -> str:
         return f"Network '{self.name}'"
@@ -48,7 +48,7 @@ class Network:
             net_dict["id"],
             net_dict["name"],
             network_type=NetworkType(net_dict["provider:network_type"]),
-            segmentation_id=net_dict["provider:segmentation_id"],
+            vlan_id=net_dict["provider:segmentation_id"],
         )
 
     @classmethod

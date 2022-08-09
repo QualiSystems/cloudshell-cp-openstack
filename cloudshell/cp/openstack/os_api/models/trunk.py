@@ -92,7 +92,7 @@ class Trunk:
     def add_sub_port(self, port: Port) -> None:
         sub_port_data = {
             "port_id": port.id,
-            "segmentation_id": port.network.segmentation_id,
+            "segmentation_id": port.network.vlan_id,
             "segmentation_type": port.network.network_type.value,
         }
 
