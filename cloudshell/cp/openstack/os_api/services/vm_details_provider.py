@@ -59,7 +59,7 @@ def _get_vm_network_data(
 
         current_interface = VmDetailsNetworkInterface(
             interfaceId=interface.mac_addr,
-            networkId=net_dict["provider:segmentation_id"],
+            networkId=interface.net_id,
             isPrimary=is_primary_and_predefined,
             isPredefined=is_primary_and_predefined,
             networkData=network_data,
