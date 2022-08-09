@@ -1,13 +1,11 @@
 import time
-from ipaddress import IPv4Network, ip_network
 from logging import Logger
-from typing import List, Set
+from typing import List
 
 from neutronclient.v2_0.client import Client as NeutronClient
 from neutronclient.v2_0.client import exceptions as neutron_exceptions
 
 from cloudshell.cp.openstack.exceptions import (
-    FreeSubnetIsNotFoundException,
     NetworkException,
     NetworkNotFoundException,
     SubnetNotFoundException,
@@ -118,42 +116,6 @@ class NeutronService:
             raise NetworkNotFoundException(emsg)
         return net
 
-    def create_subnet(self, net_id: str, reserved_networks: List[str]):
-        cidr = self._get_unused_cidr(reserved_networks)
-        data = {
-            "subnet": {
-                "cidr": cidr,
-                "network_id": net_id,
-                "ip_version": 4,
-                "name": f"qs_subnet_{net_id}",
-                "gateway_ip": None,
-            }
-        }
-        self._logger.info(f"Calling neutron client create_subnet with request {data}")
-        new_subnet = self._neutron.create_subnet(data)["subnet"]
-        self._logger.info(f"Created new subnet: {new_subnet}")
-        return new_subnet
-
-    def _get_unused_cidr(self, reserved_cidrs: List[str]) -> str:
-        """Gets unused CIDR that excludes the reserved CIDRs.
-
-        We basically start with a 10.0. network to find a subnet that does not overlap
-        # with either the reserved_cidrs or currently allocated CIDRs
-        # currently supports /24 subnets
-        """
-        self._logger.info(f"reserved CIDRs: {reserved_cidrs}")
-
-        current_subnets = self._neutron.list_subnets(fields=["cidr", "id"])["subnets"]
-        blacklist_cidrs = {subnet["cidr"] for subnet in current_subnets}
-        blacklist_cidrs.update(reserved_cidrs)
-        self._logger.info(f"blacklist CIDRs: {blacklist_cidrs}")
-        blacklist_subnets = set(map(ip_network, blacklist_cidrs))
-
-        found_subnet = _generate_subnet(blacklist_subnets)
-        cidr = str(found_subnet)
-        self._logger.info(f"Resolved CIDR: {cidr}")
-        return cidr
-
     def create_floating_ip(self, subnet_id: str, port_id: str) -> str:
         subnet_dict = self.get_subnet(id=subnet_id)
         floating_ip_create_dict = {
@@ -200,14 +162,3 @@ class NeutronService:
 
     def delete_security_group(self, sg_id: str):
         self._neutron.delete_security_group(sg_id)
-
-
-def _generate_subnet(blacklist_subnets: Set[IPv4Network]) -> IPv4Network:
-    first_second_octet_dict = {10: range(256), 172: range(16, 32), 192: (168,)}
-    for first_octet, second_octets in first_second_octet_dict.items():
-        for second_octet in second_octets:
-            for third_octet in range(256):
-                subnet = IPv4Network(f"{first_octet}.{second_octet}.{third_octet}.0/24")
-                if not any(map(subnet.overlaps, blacklist_subnets)):
-                    return subnet
-    raise FreeSubnetIsNotFoundException("All Subnets Exhausted")
