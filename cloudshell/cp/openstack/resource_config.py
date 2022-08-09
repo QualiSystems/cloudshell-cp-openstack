@@ -26,6 +26,7 @@ class OSAttributeNames:
     password = "Password"
     os_reserved_networks = "OpenStack Reserved Networks"
     os_mgmt_net_id = "OpenStack Management Network ID"
+    os_trunk_net_id = "OpenStack Trunk Network ID"
     vlan_type = "VLAN Type"
     os_physical_int_name = "OpenStack Physical Interface Name"
     floating_ip_subnet_id = "Floating IP Subnet ID"
@@ -41,6 +42,7 @@ class OSResourceConfig(GenericResourceConfig):
     password = PasswordAttrRO(ATTR_NAMES.password, ResourceAttrRO.NAMESPACE.SHELL_NAME)
     os_reserved_networks = ResourceListAttrROShellName(ATTR_NAMES.os_reserved_networks)
     os_mgmt_net_id = ResourceAttrROShellName(ATTR_NAMES.os_mgmt_net_id)
+    os_trunk_net_id = ResourceAttrROShellName(ATTR_NAMES.os_trunk_net_id)
     vlan_type = ResourceAttrROShellName(ATTR_NAMES.vlan_type)
     os_physical_int_name = ResourceAttrROShellName(ATTR_NAMES.os_physical_int_name)
     floating_ip_subnet_id = ResourceAttrROShellName(ATTR_NAMES.floating_ip_subnet_id)
