@@ -33,7 +33,7 @@ class QTrunk:
 
     def _get_sub_port_name(self, instance: Instance, vlan_network: Network) -> str:
         prefix = self._get_name_prefix(instance)
-        return f"{prefix}-sub-port-{vlan_network.segmentation_id}"
+        return f"{prefix}-sub-port-{vlan_network.vlan_id}"
 
     def connect_trunk(self, instance: Instance, vlan_network: Network) -> Interface:
         try:
