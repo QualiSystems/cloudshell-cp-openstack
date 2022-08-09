@@ -125,11 +125,6 @@ class OSApi:
         ]
         return [self.get_network_dict(name=name)["id"] for name in net_names]
 
-    def create_subnet(self, net_id: str):
-        return self._neutron_service.create_subnet(
-            net_id, self._resource_conf.os_reserved_networks
-        )
-
     def attach_interface_to_instance(
         self,
         instance: NovaServer,
