@@ -91,7 +91,7 @@ class Instance:
         iface = self.find_interface_by_network(network)
         if iface:
             self.detach_port(iface.port)
-            if iface.port.name:
+            if not iface.port.name:  # port created automatically
                 self._wait_port_is_gone(iface.port)
         else:
             self._logger.debug(f"Interface with the {network} not found in the {self}")
