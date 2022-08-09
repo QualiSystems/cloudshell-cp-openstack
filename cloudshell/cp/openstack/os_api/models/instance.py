@@ -76,14 +76,15 @@ class Instance:
 
     def attach_network(self, network: Network) -> Interface:
         self._logger.debug(f"Attaching a {network} to the {self}")
-        os_iface = self._os_instance.interface_attach(
-            port_id=None, net_id=network.id, fixed_ip=None
+        # os_instance.interface_attach raises an exception
+        os_iface = self._nova.servers.interface_attach(
+            self._os_instance, port_id=None, net_id=network.id, fixed_ip=None
         )
         return self.api.Interface.from_os_interface(self, os_iface)
 
     def detach_port(self, port: Port) -> None:
         self._logger.debug(f"Detaching the {port} from the {self}")
-        self._os_instance.interface_detach(port.id)
+        self._nova.servers.interface_detach(self._os_instance, port.id)
 
     def detach_network(self, network: Network) -> None:
         self._logger.debug(f"Detaching the {network} from the {self}")
