@@ -1,100 +1,84 @@
 from logging import Logger
-from threading import Lock
 
 from cloudshell.shell.flows.connectivity.basic_flow import AbstractConnectivityFlow
+from cloudshell.shell.flows.connectivity.models.connectivity_model import (
+    ConnectionModeEnum,
+    ConnectivityActionModel,
+)
+from cloudshell.shell.flows.connectivity.models.driver_response import (
+    ConnectivityActionResult,
+)
+from cloudshell.shell.flows.connectivity.parse_request_service import (
+    AbstractParseConnectivityService,
+)
 
-from cloudshell.cp.openstack.exceptions import NetworkNotFoundException
-from cloudshell.cp.openstack.os_api.api import OSApi
-from cloudshell.cp.openstack.os_api.os_api_models.network import Network
-from cloudshell.cp.openstack.os_api.os_api_models.port import Port
-from cloudshell.cp.openstack.os_api.os_api_models.trunk import Trunk
+from cloudshell.cp.openstack.api.api import OsApi
+from cloudshell.cp.openstack.exceptions import NetworkNotFound
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
+from cloudshell.cp.openstack.services.network_service import QVlanNetwork
+from cloudshell.cp.openstack.services.trunk_service import QTrunk
 
 
 class ConnectivityFlow(AbstractConnectivityFlow):
-    IS_VLAN_RANGE_SUPPORTED = False
-    IS_MULTI_VLAN_SUPPORTED = False
-
-    def __init__(self, resource_conf: OSResourceConfig, os_api: OSApi, logger: Logger):
-        super().__init__(logger)
-        self._resource_conf = resource_conf
-        self._api = os_api
-        self._subnet_lock = Lock()
-
-    def _add_vlan_flow(
+    def __init__(
         self,
-        vlan_range: str,
-        port_mode: str,
-        full_name: str,
-        qnq: bool,
-        c_tag: str,
-        vm_uid: str,
+        resource_conf: OSResourceConfig,
+        parse_connectivity_request_service: AbstractParseConnectivityService,
+        logger: Logger,
     ):
-        net_dict = self._api.get_or_create_net_with_segmentation_id(
-            int(vlan_range), qnq
-        )
-        if not net_dict["subnets"]:
-            with self._subnet_lock:
-                self._api.create_subnet(net_dict["id"])
+        super().__init__(parse_connectivity_request_service, logger)
+        self._resource_conf = resource_conf
+        self._api = OsApi.from_config(resource_conf, logger)
+        self._q_vlan_network = QVlanNetwork(self._api, resource_conf, logger)
+        self._q_trunk = QTrunk(self._api, resource_conf, logger)
+
+    def _set_vlan(self, action: ConnectivityActionModel) -> ConnectivityActionResult:
+        vlan_id = int(action.connection_params.vlan_id)
+        vm_uuid = action.custom_action_attrs.vm_uuid
+        qnq = action.connection_params.vlan_service_attrs.qnq
+        port_mode = action.connection_params.mode
+
+        instance = self._api.Instance.get(vm_uuid)
+        self._logger.info(f"Start adding VLAN {vlan_id} to the {instance}")
+        vlan_network = self._q_vlan_network.get_or_create_network(vlan_id, qnq)
 
         try:
-            instance = self._api.get_instance(vm_uid)
-        except Exception:  # todo do normal rollback, we should remove trunk also
-            self._api.remove_network(net_dict["id"])
-            raise
-
-        try:
-            if port_mode == "trunk":
-                port = self._create_trunk_port(instance.name, net_dict)
-                # todo what if it already connected??
-                self._api.attach_interface_to_instance(instance, port_id=port.id)
+            if port_mode is ConnectionModeEnum.TRUNK:
+                iface = self._q_trunk.connect_trunk(instance, vlan_network)
             else:
-                self._api.attach_interface_to_instance(instance, net_id=net_dict["id"])
+                try:
+                    iface = instance.attach_network(vlan_network)
+                except Exception:
+                    instance.detach_network(vlan_network)
+                    raise
         except Exception:
-            self._api.remove_network(net_dict["id"])
+            vlan_network.remove(raise_in_use=False)
             raise
 
-    def _remove_vlan_flow(
-        self, vlan_range: str, full_name: str, port_mode: str, vm_uid: str
-    ):
-        try:
-            net_dict = self._api.get_net_with_segmentation_id(int(vlan_range))
-        except NetworkNotFoundException:
-            pass
-        else:
-            instance = self._api.get_instance(vm_uid)
-            port_id = self._api.get_port_id_for_net_name(instance, net_dict["name"])
-            self._api.detach_interface_from_instance(instance, port_id)
-            with self._subnet_lock:
-                self._api.remove_network(net_dict["id"])
-
-    def _remove_all_vlan_flow(self, full_name: str, vm_uid: str):
-        instance = self._api.get_instance(vm_uid)
-        net_ids = self._api.get_all_net_ids_with_segmentation(instance)
-        for net_id in net_ids:
-            self._api.detach_interface_from_instance(instance, net_id)
-        for net_id in net_ids:
-            with self._subnet_lock:
-                self._api.remove_network(net_id)
-
-    def _create_trunk_port(self, instance_name: str, net_dict: dict) -> Port:
-        neutron = self._api._neutron
-        vlan_network = Network.from_dict(neutron, net_dict)
-        mgmt_network = Network.get(neutron, self._resource_conf.os_mgmt_net_id)
-        prefix = instance_name[:16]
-
-        trunk_port_name = f"{prefix}-trunk-port"
-        # todo use trunk network id
-        trunk_port = Port.find_or_create(neutron, trunk_port_name, mgmt_network)
-
-        trunk_name = f"{prefix}-trunk"
-        trunk = Trunk.find_or_create(neutron, trunk_name, trunk_port)
-
-        sub_port_name = f"{prefix}-sub-port-{vlan_network.segmentation_id}"
-        sub_port = Port.find_or_create(
-            neutron, sub_port_name, vlan_network, trunk_port.mac_address
+        msg = f"Setting VLAN {vlan_id} successfully completed"
+        return ConnectivityActionResult.success_result_vm(
+            action, msg, iface.mac_address
         )
 
-        trunk.add_sub_port(sub_port)
+    def _remove_vlan(self, action: ConnectivityActionModel) -> ConnectivityActionResult:
+        vlan_id = int(action.connection_params.vlan_id)
+        vm_uuid = action.custom_action_attrs.vm_uuid
+        port_mode = action.connection_params.mode
+        mac_address = action.connector_attrs.interface
 
-        return trunk_port
+        instance = self._api.Instance.get(vm_uuid)
+        self._logger.info(f"Start removing VLAN {vlan_id} from the {instance}")
+        try:
+            vlan_network = self._q_vlan_network.get_network(vlan_id)
+        except NetworkNotFound:
+            self._logger.debug(f"VLAN {vlan_id} already removed")
+        else:
+            if port_mode == "trunk":
+                self._q_trunk.remove_trunk(instance, vlan_network)
+            else:
+                instance.detach_network(vlan_network)
+
+            vlan_network.remove(raise_in_use=False)
+
+        msg = "Removing VLAN successfully completed"
+        return ConnectivityActionResult.success_result_vm(action, msg, mac_address)
