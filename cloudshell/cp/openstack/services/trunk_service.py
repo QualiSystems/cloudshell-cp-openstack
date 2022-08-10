@@ -87,8 +87,9 @@ class QTrunk:
                 trunk.remove_sub_port(sub_port)
                 sub_port.remove()
 
-            if not trunk.sub_ports_ids:
-                trunk.remove()
-                trunk.port.remove()
-            else:
-                instance.detach_port(trunk.port)
+            with suppress(TrunkNotFound, PortNotFound):
+                if not trunk.sub_ports_ids:
+                    trunk.remove()
+                    trunk.port.remove()
+                else:
+                    instance.detach_port(trunk.port)
