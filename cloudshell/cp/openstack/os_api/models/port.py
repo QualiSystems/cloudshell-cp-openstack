@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from contextlib import suppress
 from logging import Logger
 from threading import Lock
@@ -9,7 +10,7 @@ import attr
 from neutronclient.common import exceptions as neutron_exc
 from neutronclient.v2_0.client import Client as NeutronClient
 
-from cloudshell.cp.openstack.exceptions import PortNotFound
+from cloudshell.cp.openstack.exceptions import PortIsNotGone, PortNotFound
 from cloudshell.cp.openstack.os_api.models.network import Network
 from cloudshell.cp.openstack.utils.cached_property import cached_property
 
@@ -94,3 +95,15 @@ class Port:
         self._logger.debug(f"Removing the {self}")
         with suppress(neutron_exc.PortNotFoundClient):
             self._neutron.delete_port(self.id)
+
+    def wait_until_is_gone(self, timeout: int = 5, raise_if_not: bool = True):
+        for _ in range(timeout):
+            try:
+                self.api.Port.get(self.id)
+            except PortNotFound:
+                break
+            else:
+                time.sleep(1)
+        else:
+            if raise_if_not:
+                raise PortIsNotGone(self)
