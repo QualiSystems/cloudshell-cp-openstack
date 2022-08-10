@@ -67,8 +67,9 @@ class Instance:
                 self._logger.debug(f"Already attached the {port} to the {self}")
                 break
         else:
-            os_iface = self._os_instance.interface_attach(
-                port_id=port.id, net_id=None, fixed_ip=None
+            # os_instance.interface_attach raises an exception
+            os_iface = self._nova.servers.interface_attach(
+                self._os_instance, port_id=port.id, net_id=None, fixed_ip=None
             )
             iface = self.api.Interface.from_os_interface(self, os_iface)
         return iface
@@ -90,8 +91,8 @@ class Instance:
         iface = self.find_interface_by_network(network)
         if iface:
             self.detach_port(iface.port)
-            if not iface.port.name:  # port created automatically
-                iface.port.wait_until_is_gone()
+            if not iface.port.name:  # probably the port created automatically
+                iface.port.wait_until_is_gone(raise_if_not=False)
         else:
             self._logger.debug(f"Interface with the {network} not found in the {self}")
 
