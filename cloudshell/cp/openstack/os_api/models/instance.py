@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from logging import Logger
 from typing import TYPE_CHECKING, ClassVar, Generator
 
@@ -10,7 +9,7 @@ from novaclient import exceptions as nova_exc
 from novaclient.v2.client import Client as NovaClient
 from novaclient.v2.servers import Server as OpenStackInstance
 
-from cloudshell.cp.openstack.exceptions import InstanceNotFound, PortNotFound
+from cloudshell.cp.openstack.exceptions import InstanceNotFound
 from cloudshell.cp.openstack.utils.cached_property import cached_property
 
 if TYPE_CHECKING:
@@ -92,7 +91,7 @@ class Instance:
         if iface:
             self.detach_port(iface.port)
             if not iface.port.name:  # port created automatically
-                self._wait_port_is_gone(iface.port)
+                iface.port.wait_until_is_gone()
         else:
             self._logger.debug(f"Interface with the {network} not found in the {self}")
 
@@ -100,15 +99,6 @@ class Instance:
         for iface in self.interfaces:
             if iface.network_id == network.id:
                 return iface
-
-    def _wait_port_is_gone(self, port: Port):
-        for _ in range(5):
-            try:
-                self.api.Port.get(port.id)
-            except PortNotFound:
-                break
-            else:
-                time.sleep(1)
 
 
 @attr.s(auto_attribs=True)
