@@ -73,7 +73,7 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         except NetworkNotFound:
             self._logger.debug(f"VLAN {vlan_id} already removed")
         else:
-            if port_mode == "trunk":
+            if port_mode is ConnectionModeEnum.TRUNK:
                 self._q_trunk.remove_trunk(instance, vlan_network)
             else:
                 instance.detach_network(vlan_network)
