@@ -93,7 +93,7 @@ class Trunk:
         sub_port_data = {
             "port_id": port.id,
             "segmentation_id": port.network.vlan_id,
-            "segmentation_type": port.network.network_type.value,
+            "segmentation_type": "vlan",
         }
 
         try:
