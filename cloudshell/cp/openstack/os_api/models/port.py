@@ -16,6 +16,7 @@ from cloudshell.cp.openstack.utils.cached_property import cached_property
 
 if TYPE_CHECKING:
     from cloudshell.cp.openstack.api.api import OsApi
+    from cloudshell.cp.openstack.os_api.models import Trunk
 
 
 @attr.s(auto_attribs=True, str=False)
@@ -96,6 +97,16 @@ class Port:
     @cached_property
     def network(self) -> Network:
         return self.api.Network.get(self.network_id)
+
+    @property
+    def trunk(self) -> Trunk | None:
+        port_dict = self._neutron.show_port(self.id)["port"]
+        trunk_id = port_dict.get("trunk_details", {}).get("trunk_id")
+        if trunk_id:
+            trunk = self.api.Trunk.get(trunk_id)
+        else:
+            trunk = None
+        return trunk
 
     def remove(self) -> None:
         self._logger.debug(f"Removing the {self}")
