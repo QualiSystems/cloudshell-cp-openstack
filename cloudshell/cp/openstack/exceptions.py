@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
-    from cloudshell.cp.openstack.os_api.models import Network, Port
+    from cloudshell.cp.openstack.os_api.models import Instance, Network, Port
 
 
 class OSBaseException(Exception):
@@ -56,6 +56,11 @@ class PortNotFound(NetworkException):
 class PortIsNotGone(NetworkException):
     def __init__(self, port: Port):
         super().__init__(f"The {port} is not gone")
+
+
+class PortIsNotAttached(NetworkException):
+    def __init__(self, port: Port, instance: Instance):
+        super().__init__(f"The {port} is not attached to the {instance}")
 
 
 class TrunkNotFound(NetworkException):
