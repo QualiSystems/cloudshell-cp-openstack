@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import suppress
 from logging import Logger
 from threading import Lock
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Generator
 
 import attr
 from neutronclient.common import exceptions as neutron_exc
@@ -57,6 +57,12 @@ class Trunk:
         else:
             raise TrunkNotFound(name=name)
         return cls.from_dict(trunk_dict)
+
+    @classmethod
+    def all(cls) -> Generator[Trunk, None, None]:  # noqa: A003
+        cls._logger.debug("Get all trunks")
+        for trunk_dict in cls._neutron.list_trunks()["trunks"]:
+            yield cls.from_dict(trunk_dict)
 
     @classmethod
     def create(cls, name: str, port: Port) -> Trunk:
