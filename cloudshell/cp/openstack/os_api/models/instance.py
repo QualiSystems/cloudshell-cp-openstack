@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from logging import Logger
 from typing import TYPE_CHECKING, ClassVar, Generator
 
@@ -9,7 +10,7 @@ from novaclient import exceptions as nova_exc
 from novaclient.v2.client import Client as NovaClient
 from novaclient.v2.servers import Server as OpenStackInstance
 
-from cloudshell.cp.openstack.exceptions import InstanceNotFound
+from cloudshell.cp.openstack.exceptions import InstanceNotFound, PortIsNotAttached
 from cloudshell.cp.openstack.utils.cached_property import cached_property
 
 if TYPE_CHECKING:
@@ -72,7 +73,17 @@ class Instance:
                 self._os_instance, port_id=port.id, net_id=None, fixed_ip=None
             )
             iface = self.api.Interface.from_os_interface(self, os_iface)
+            self.wait_port_attached(port)
         return iface
+
+    def wait_port_attached(self, port: Port, timeout: int = 5):
+        for _ in range(timeout):
+            for iface in self.interfaces:
+                if iface.port_id == port.id:
+                    return
+            else:
+                time.sleep(1)
+        raise PortIsNotAttached(port, self)
 
     def attach_network(self, network: Network) -> Interface:
         self._logger.debug(f"Attaching a {network} to the {self}")
