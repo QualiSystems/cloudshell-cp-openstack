@@ -86,7 +86,11 @@ class Trunk:
 
     @property
     def sub_ports_ids(self) -> list[str]:
-        sub_ports_dicts = self._neutron.trunk_get_subports(self.id)["sub_ports"]
+        try:
+            sub_ports_dicts = self._neutron.trunk_get_subports(self.id)["sub_ports"]
+        except neutron_exc.NotFound:
+            raise TrunkNotFound(id_=self.id)
+
         self._logger.debug(f"Got sub ports {sub_ports_dicts} for the {self}")
         return [sub_port["port_id"] for sub_port in sub_ports_dicts]
 
