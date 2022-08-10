@@ -90,6 +90,11 @@ class Trunk:
         self._logger.debug(f"Got sub ports {sub_ports_dicts} for the {self}")
         return [sub_port["port_id"] for sub_port in sub_ports_dicts]
 
+    @property
+    def sub_ports(self) -> Generator[Port, None, None]:
+        for sub_port_id in self.sub_ports_ids:
+            yield self.api.Port.get(sub_port_id)
+
     def remove(self) -> None:
         self._logger.debug(f"Removing the {self}")
         with suppress(neutron_exc.NotFound):
