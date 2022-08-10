@@ -57,6 +57,12 @@ class Subnet:
             yield cls.from_dict(subnet_dict)
 
     @classmethod
+    def all(cls) -> Generator[Subnet, None, None]:  # noqa: A003
+        cls._logger.debug("Get all subnets")
+        for subnet_dict in cls._neutron.list_subnets()["subnets"]:
+            yield cls.from_dict(subnet_dict)
+
+    @classmethod
     def create(
         cls,
         name: str,

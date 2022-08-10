@@ -81,6 +81,12 @@ class Network:
         return cls.from_dict(net_dict)
 
     @classmethod
+    def all(cls) -> Generator[Network, None, None]:  # noqa: A003
+        cls._logger.debug("Get all networks")
+        for net_dict in cls._neutron.list_networks()["networks"]:
+            yield cls.from_dict(net_dict)
+
+    @classmethod
     def create(
         cls,
         name: str,
