@@ -4,7 +4,7 @@ import time
 from contextlib import suppress
 from logging import Logger
 from threading import Lock
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Generator
 
 import attr
 from neutronclient.common import exceptions as neutron_exc
@@ -60,6 +60,12 @@ class Port:
         else:
             raise PortNotFound(name=name)
         return cls.from_dict(port_dict)
+
+    @classmethod
+    def all(cls) -> Generator[Port, None, None]:  # noqa: A003
+        cls._logger.debug("Get all ports")
+        for port_dict in cls._neutron.list_ports()["ports"]:
+            yield cls.from_dict(port_dict)
 
     @classmethod
     def create(
