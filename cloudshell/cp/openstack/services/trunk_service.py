@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from contextlib import suppress
 from logging import Logger
+from threading import Lock
+from typing import ClassVar
 
 import attr
 
@@ -13,6 +15,7 @@ from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
 @attr.s(auto_attribs=True)
 class QTrunk:
+    LOCK: ClassVar[Lock] = Lock()
     _api: OsApi
     _resource_conf: OSResourceConfig
     _logger: Logger
@@ -57,7 +60,10 @@ class QTrunk:
             sub_port_name, vlan_network, trunk_port.mac_address
         )
         trunk.add_sub_port(sub_port)
-        return instance.attach_port(trunk_port)
+
+        with self.LOCK:
+            iface = instance.attach_port(trunk_port)
+        return iface
 
     def remove_trunk(self, instance: Instance, vlan_network: Network) -> None:
         self._logger.info(f"Removing a trunk from the {instance} with {vlan_network}")
