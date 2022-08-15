@@ -47,13 +47,13 @@ class Instance:
             raise InstanceNotFound(name=name)
         return cls(os_instance)
 
-    @classmethod
+    @classmethod  # noqa: A003
     def all(cls) -> Generator[Instance, None, None]:  # noqa: A003
         cls._logger.debug("Get all instances")
         for os_instance in cls._nova.servers.list():
             yield cls(os_instance)
 
-    @property
+    @property  # noqa: A003
     def id(self) -> str:  # noqa: A003
         return self._os_instance.id
 
