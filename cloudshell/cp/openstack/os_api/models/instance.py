@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from logging import Logger
-from typing import TYPE_CHECKING, ClassVar, Generator, List
+from typing import TYPE_CHECKING, ClassVar, Generator
 
 import attr
 from neutronclient.v2_0.client import Client as NeutronClient
