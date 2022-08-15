@@ -21,10 +21,12 @@ from cloudshell.shell.core.driver_context import (
     ResourceRemoteCommandContext,
 )
 
+from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.constants import SHELL_NAME
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp, OSNovaImgDeployedApp
 from cloudshell.cp.openstack.os_api.api import OSApi
 from cloudshell.cp.openstack.os_api.commands.rollback import RollbackCommandsManager
+from cloudshell.cp.openstack.os_api.models import NetworkType
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
 
@@ -278,6 +280,7 @@ def nova(instance):
     n = Mock(name="NovaClient")
     n.servers.create.return_value = instance
     n.servers.find.return_value = instance
+    n.servers.get.return_value = instance
     return n
 
 
@@ -463,3 +466,18 @@ def sleepless(monkeypatch):
         pass
 
     monkeypatch.setattr(time, "sleep", sleep)
+
+
+@pytest.fixture()
+def os_api_v2(logger, os_session, nova, neutron, monkeypatch):
+    api = OsApi(os_session, logger)
+    monkeypatch.setattr(api, "_nova", nova)
+    monkeypatch.setattr(api, "_neutron", neutron)
+    return api
+
+
+@pytest.fixture
+def simple_network(os_api_v2):
+    return os_api_v2.Network(
+        id="net id", name="net name", network_type=NetworkType.VXLAN, vlan_id=None
+    )
