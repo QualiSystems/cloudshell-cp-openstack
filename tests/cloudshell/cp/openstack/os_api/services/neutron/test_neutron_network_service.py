@@ -5,15 +5,13 @@ import pytest
 from neutronclient.v2_0.client import exceptions as neutron_exceptions
 
 from cloudshell.cp.openstack.exceptions import (
-    FreeSubnetIsNotFoundException,
+    FreeSubnetIsNotFound,
     NetworkException,
     NetworkNotFoundException,
     SubnetNotFoundException,
 )
 from cloudshell.cp.openstack.os_api.services import NeutronService
-from cloudshell.cp.openstack.os_api.services.neutron.neutron_network_service import (
-    _generate_subnet,
-)
+from cloudshell.cp.openstack.services.network_service import _get_first_free_subnet
 
 
 @pytest.fixture()
@@ -240,35 +238,14 @@ def test_get_net_with_segmentation_not_found(neutron_service, neutron):
         neutron_service.get_net_with_segmentation(segmentation_id)
 
 
-def test_create_subnet(neutron_service, neutron):
-    net_id = "net id"
-    reserved_networks = []
-    neutron.list_subnets.return_value = {"subnets": []}
-
-    neutron_service.create_subnet(net_id, reserved_networks)
-
-    neutron.list_subnets.assert_called_once_with(fields=["cidr", "id"])
-    neutron.create_subnet.assert_called_once_with(
-        {
-            "subnet": {
-                "cidr": "10.0.0.0/24",
-                "network_id": net_id,
-                "ip_version": 4,
-                "name": f"qs_subnet_{net_id}",
-                "gateway_ip": None,
-            }
-        }
-    )
-
-
 def test_generate_subnet_not_found_free():
     blacklist_subnets = {"10.0.0.0/8"}
     blacklist_subnets.add("172.16.0.0/12")
     blacklist_subnets.add("192.168.0.0/16")
     blacklist_subnets = set(map(IPv4Network, blacklist_subnets))
 
-    with pytest.raises(FreeSubnetIsNotFoundException, match="All Subnets Exhausted"):
-        _generate_subnet(blacklist_subnets)
+    with pytest.raises(FreeSubnetIsNotFound, match="All Subnets Exhausted"):
+        _get_first_free_subnet(blacklist_subnets)
 
 
 def test_create_floating_ip(neutron_service, neutron):
