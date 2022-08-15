@@ -22,7 +22,6 @@ from cloudshell.cp.openstack.utils.cached_property import cached_property
 
 class OSApi:
     API_VERSION = "2"
-    NET_WITH_SEGMENTATION_PREFIX = "qs_net_segmentation_id_"
 
     def __init__(self, resource_conf: OSResourceConfig, logger: Logger):
         self._resource_conf = resource_conf
@@ -101,44 +100,6 @@ class OSApi:
 
     def remove_network(self, net_id: str):
         return self._neutron_service.remove_network(net_id)
-
-    def get_or_create_net_with_segmentation_id(
-        self, id_: int, qnq: bool = False
-    ) -> dict:
-        return self._neutron_service.get_or_create_net_with_segmentation_id(
-            id_, self._resource_conf, self.NET_WITH_SEGMENTATION_PREFIX, qnq
-        )
-
-    def get_net_with_segmentation_id(self, id_: int) -> dict:
-        return self._neutron_service.get_net_with_segmentation(id_)
-
-    def get_port_id_for_net_name(self, instance: NovaServer, net_name: str) -> str:
-        for interface in instance.interface_list():
-            if self.get_network_name(interface.net_id) == net_name:
-                return interface.port_id
-
-    def get_all_net_ids_with_segmentation(self, instance: NovaServer):
-        net_names = [
-            name
-            for name in instance.networks.keys()
-            if name.startswith(self.NET_WITH_SEGMENTATION_PREFIX)
-        ]
-        return [self.get_network_dict(name=name)["id"] for name in net_names]
-
-    def attach_interface_to_instance(
-        self,
-        instance: NovaServer,
-        *,
-        net_id: str | None = None,
-        port_id: str | None = None,
-    ) -> None:
-        assert port_id or net_id
-        self._get_nova_service(instance).attach_interface(
-            port_id=port_id, net_id=net_id
-        )
-
-    def detach_interface_from_instance(self, instance: NovaServer, net_id: str):
-        self._get_nova_service(instance).detach_nic_from_instance(net_id)
 
     def create_security_group_for_instance(
         self, instance: NovaServer, rules: list[SecurityGroupRule]
