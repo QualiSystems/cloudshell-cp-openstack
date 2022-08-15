@@ -58,7 +58,7 @@ class NovaService:
         deploy_app: OSNovaImgDeployApp,
         cancellation_manager: CancellationContextManager,
         logger: Logger,
-    ) -> "NovaService":
+    ) -> NovaService:
         if not deploy_app.instance_flavor:
             raise ValueError("Instance flavor cannot be empty.")
         logger.info(
@@ -112,7 +112,7 @@ class NovaService:
         nova: NovaClient,
         instance_id: str,
         logger: Logger,
-    ) -> "NovaService":
+    ) -> NovaService:
         try:
             instance = nova.servers.find(id=instance_id)
         except nova_exceptions.NotFound:
@@ -147,23 +147,6 @@ class NovaService:
         if self.status != self.STATUS.SHUTOFF:
             self.instance.stop()
             self._wait_for_status(self.STATUS.SHUTOFF)
-
-    def attach_interface(
-        self, *, net_id: str | None = None, port_id: str | None = None
-    ) -> None:
-        assert port_id or net_id
-
-        if port_id:
-            self._nova.servers.interface_attach(
-                self.instance, port_id=port_id, net_id=None, fixed_ip=None
-            )
-        else:
-            self._nova.servers.interface_attach(
-                self.instance, port_id=None, net_id=net_id, fixed_ip=None
-            )
-
-    def detach_nic_from_instance(self, port_id: str):
-        self._nova.servers.interface_detach(self.instance, port_id)
 
     def get_instance_image(self) -> Image:
         return self._nova.glance.find_image(self.instance.image["id"])
