@@ -32,8 +32,7 @@ class QVlanNetwork:
         except neutron_exc.Conflict:
             self._logger.info(f"Network with VLAN {vlan_id} already created")
             network = self.get_network(vlan_id)
-        else:
-            self._create_subnet(network)
+        self._create_subnet(network)
         return network
 
     def _create_network(self, vlan_id: int, qnq: bool) -> Network:
