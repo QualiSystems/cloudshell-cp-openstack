@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from logging import Logger
 
 from cloudshell.shell.flows.connectivity.basic_flow import AbstractConnectivityFlow
@@ -25,10 +27,11 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         resource_conf: OSResourceConfig,
         parse_connectivity_request_service: AbstractParseConnectivityService,
         logger: Logger,
+        api: OsApi | None = None,
     ):
         super().__init__(parse_connectivity_request_service, logger)
         self._resource_conf = resource_conf
-        self._api = OsApi.from_config(resource_conf, logger)
+        self._api = api or OsApi.from_config(resource_conf, logger)
         self._q_vlan_network = QVlanNetwork(self._api, resource_conf, logger)
         self._q_trunk = QTrunk(self._api, resource_conf, logger)
 
