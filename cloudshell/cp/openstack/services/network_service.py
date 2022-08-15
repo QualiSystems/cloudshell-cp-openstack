@@ -67,7 +67,7 @@ class QVlanNetwork:
                     f"The {network} is missing a subnet, adding a subnet with the "
                     f"CIDR {cidr}"
                 )
-                name = self._get_subnet_name(network.name)
+                name = self._get_subnet_name(network.id)
                 subnet = self._api.Subnet.create(
                     name,
                     network,
