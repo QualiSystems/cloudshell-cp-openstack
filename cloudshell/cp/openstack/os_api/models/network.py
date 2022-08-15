@@ -80,7 +80,7 @@ class Network:
             raise NetworkNotFound(vlan_id=vlan_id) from None
         return cls.from_dict(net_dict)
 
-    @classmethod
+    @classmethod  # noqa: A003
     def all(cls) -> Generator[Network, None, None]:  # noqa: A003
         cls._logger.debug("Get all networks")
         for net_dict in cls._neutron.list_networks()["networks"]:

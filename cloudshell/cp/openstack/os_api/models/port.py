@@ -62,7 +62,7 @@ class Port:
             raise PortNotFound(name=name)
         return cls.from_dict(port_dict)
 
-    @classmethod
+    @classmethod  # noqa: A003
     def all(cls) -> Generator[Port, None, None]:  # noqa: A003
         cls._logger.debug("Get all ports")
         for port_dict in cls._neutron.list_ports()["ports"]:

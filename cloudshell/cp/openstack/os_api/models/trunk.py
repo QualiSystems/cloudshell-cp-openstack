@@ -58,7 +58,7 @@ class Trunk:
             raise TrunkNotFound(name=name)
         return cls.from_dict(trunk_dict)
 
-    @classmethod
+    @classmethod  # noqa: A003
     def all(cls) -> Generator[Trunk, None, None]:  # noqa: A003
         cls._logger.debug("Get all trunks")
         for trunk_dict in cls._neutron.list_trunks()["trunks"]:
