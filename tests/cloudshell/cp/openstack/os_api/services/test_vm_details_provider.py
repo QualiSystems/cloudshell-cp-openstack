@@ -45,7 +45,7 @@ def test_create(instance, os_api, neutron):
     assert len(data.vmNetworkData) == 1
     vm_interface = data.vmNetworkData[0]
     assert vm_interface.interfaceId == interface.mac_addr
-    assert vm_interface.networkId == interface_vlan_id
+    assert vm_interface.networkId == net_id
     assert vm_interface.isPrimary is True
     assert vm_interface.isPredefined is True
     assert vm_interface.privateIpAddress == private_ip

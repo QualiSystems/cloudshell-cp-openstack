@@ -125,26 +125,6 @@ def test_power_off(instance, nova, logger):
     instance.get.assert_called_once_with()
 
 
-def test_attach_interface(nova_service):
-    net_id = "net id"
-
-    nova_service.attach_interface(net_id)
-
-    nova_service._nova.servers.interface_attach.assert_called_once_with(
-        nova_service.instance, port_id=None, net_id=net_id, fixed_ip=None
-    )
-
-
-def test_detach_nic_from_instance(nova_service):
-    port_id = "port id"
-
-    nova_service.detach_nic_from_instance(port_id)
-
-    nova_service._nova.servers.interface_detach.assert_called_once_with(
-        nova_service.instance, port_id
-    )
-
-
 def test_get_instance_image(nova_service):
     nova_service.get_instance_image()
 
