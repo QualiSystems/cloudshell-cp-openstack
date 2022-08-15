@@ -31,7 +31,7 @@ class SecurityGroupRule:
     protocol: str = "tcp"
 
     @classmethod
-    def from_str(cls, string: str) -> "SecurityGroupRule":
+    def from_str(cls, string: str) -> SecurityGroupRule:
         emsg = (
             f'Security group rule is not supported format: "{string}".\n'
             f"Should be [cidr:][protocol:]port-or-port-range"

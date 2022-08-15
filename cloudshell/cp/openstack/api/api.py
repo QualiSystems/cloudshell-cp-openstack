@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from logging import Logger
-from typing import Type
 
 import attr
 from keystoneauth1.identity.v3 import Password as KeyStoneAuth
@@ -71,7 +70,7 @@ class OsApi:
         return NeutronClient(session=self._session, insecure=True)
 
     @cached_property
-    def Port(self) -> Type[_Port]:
+    def Port(self) -> type[_Port]:
         class Port(_Port):
             api = self
             _neutron = self._neutron
@@ -80,7 +79,7 @@ class OsApi:
         return Port
 
     @cached_property
-    def Network(self) -> Type[_Network]:
+    def Network(self) -> type[_Network]:
         class Network(_Network):
             api = self
             _neutron = self._neutron
@@ -89,7 +88,7 @@ class OsApi:
         return Network
 
     @cached_property
-    def Subnet(self) -> Type[_Subnet]:
+    def Subnet(self) -> type[_Subnet]:
         class Subnet(_Subnet):
             api = self
             _neutron = self._neutron
@@ -98,7 +97,7 @@ class OsApi:
         return Subnet
 
     @cached_property
-    def Trunk(self) -> Type[_Trunk]:
+    def Trunk(self) -> type[_Trunk]:
         class Trunk(_Trunk):
             api = self
             _neutron = self._neutron
@@ -107,7 +106,7 @@ class OsApi:
         return Trunk
 
     @cached_property
-    def Instance(self) -> Type[_Instance]:
+    def Instance(self) -> type[_Instance]:
         class Instance(_Instance):
             api = self
             _nova = self._nova
@@ -116,7 +115,7 @@ class OsApi:
         return Instance
 
     @cached_property
-    def Interface(self) -> Type[_Interface]:
+    def Interface(self) -> type[_Interface]:
         class Interface(_Interface):
             api = self
             _neutron = self._neutron
