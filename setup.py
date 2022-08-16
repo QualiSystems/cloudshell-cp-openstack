@@ -23,5 +23,6 @@ setup(
     version=version_from_file,
     package_data={"": ["*.txt"]},
     description="CloudShell Cloud Provider OpenStack package",
+    long_description="CloudShell Cloud Provider OpenStack package",
     include_package_data=True,
 )
