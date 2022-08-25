@@ -42,6 +42,11 @@ class InstanceNotFound(OSBaseException):
         super().__init__(msg)
 
 
+class ImageNotFound(OSBaseException):
+    def __init__(self, id_):
+        super().__init__(f"Image with id '{id_}' not found")
+
+
 class PortNotFound(NetworkException):
     def __init__(self, *, id_: str | None = None, name: str | None = None):
         assert id_ or name
