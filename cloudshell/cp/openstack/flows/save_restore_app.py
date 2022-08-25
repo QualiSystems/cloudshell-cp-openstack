@@ -19,6 +19,7 @@ from cloudshell.cp.core.request_actions.models import (
 from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.constants import OS_FROM_GLANCE_IMAGE_DEPLOYMENT_PATH
 from cloudshell.cp.openstack.models.attr_names import ResourceAttrName
+from cloudshell.cp.openstack.os_api.models.instance import InstanceStatus
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
 
@@ -32,10 +33,6 @@ class SaveRestoreAppFlow:
     @_api.default
     def _connect_to_api(self):
         return OsApi.from_config(self._resource_conf, self._logger)
-
-    def __attrs_post_init__(self):
-        if not self._api:
-            self._api = OsApi.from_config(self._resource_conf, self._logger)
 
     def save_apps(self, save_actions: Iterable[SaveApp]) -> str:
         results = list(map(self._save_app, save_actions))
@@ -60,13 +57,15 @@ class SaveRestoreAppFlow:
         with self._cancellation_manager:
             instance = self._api.Instance.get(vm_uuid)
 
+        power_state = None
         if attrs[ResourceAttrName.behavior_during_save] == "Power Off":
+            power_state = instance.status
             instance.power_off()
 
         snapshot_name = f"Clone of {instance.name[:64]}"
         snapshot_id = instance.create_snapshot(snapshot_name)
 
-        if attrs[ResourceAttrName.behavior_during_save] == "Power Off":
+        if power_state is InstanceStatus.ACTIVE:
             instance.power_on()
 
         return SaveAppResult(
