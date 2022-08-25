@@ -1,5 +1,5 @@
 from ipaddress import IPv4Network
-from unittest.mock import Mock, call
+from unittest.mock import call
 
 import pytest
 from neutronclient.v2_0.client import exceptions as neutron_exceptions
@@ -147,95 +147,6 @@ def test_remove_network_subnet_and_network_not_found(neutron_service, neutron):
     neutron.list_ports.assert_has_calls([call(network_id=net_id)])
     neutron.list_subnets.assert_called_once_with(network_id=net_id)
     neutron.delete_network.assert_called_once_with(net_id)
-
-
-def test_get_or_create_net_with_segmentation_id(
-    monkeypatch, neutron_service, resource_conf
-):
-    create_net_mock = Mock()
-    get_net_mock = Mock()
-    monkeypatch.setattr(
-        neutron_service, "_create_net_with_segmentation_id", create_net_mock
-    )
-    monkeypatch.setattr(neutron_service, "get_net_with_segmentation", get_net_mock)
-    segmentation_id = 101
-    net_prefix = "prefix"
-    create_net_mock.side_effect = neutron_exceptions.Conflict()
-
-    net = neutron_service.get_or_create_net_with_segmentation_id(
-        segmentation_id, resource_conf, net_prefix
-    )
-
-    create_net_mock.assert_called_once_with(
-        segmentation_id, resource_conf, net_prefix, False
-    )
-    get_net_mock.assert_called_once_with(segmentation_id)
-    assert net == get_net_mock()
-
-
-def test_create_net_with_segmentation_id(neutron_service, neutron, resource_conf):
-    segmentation_id = 101
-    net_prefix = "net prefix"
-    resource_conf.vlan_type = "vlan"
-
-    neutron_service._create_net_with_segmentation_id(
-        segmentation_id, resource_conf, net_prefix
-    )
-
-    neutron.create_network.assert_called_once_with(
-        {
-            "network": {
-                "provider:network_type": resource_conf.vlan_type,
-                "provider:segmentation_id": segmentation_id,
-                "name": f"{net_prefix}_{segmentation_id}",
-                "admin_state_up": True,
-                "provider:physical_network": resource_conf.os_physical_int_name,
-            }
-        }
-    )
-
-
-def test_create_net_with_segmentation_and_qnq(neutron_service, neutron, resource_conf):
-    segmentation_id = 101
-    net_prefix = "net prefix"
-    resource_conf.vlan_type = "vlan"
-    qnq = True
-
-    neutron_service._create_net_with_segmentation_id(
-        segmentation_id, resource_conf, net_prefix, qnq
-    )
-
-    neutron.create_network.assert_called_once_with(
-        {
-            "network": {
-                "provider:network_type": resource_conf.vlan_type,
-                "provider:segmentation_id": segmentation_id,
-                "name": f"{net_prefix}_{segmentation_id}",
-                "admin_state_up": True,
-                "provider:physical_network": resource_conf.os_physical_int_name,
-                "vlan_transparent": True,
-            }
-        }
-    )
-
-
-def test_get_net_with_segmentation(neutron_service, neutron):
-    segmentation_id = 101
-
-    neutron_service.get_net_with_segmentation(segmentation_id)
-
-    neutron.list_networks.assert_called_once_with(
-        **{"provider:segmentation_id": segmentation_id}
-    )
-
-
-def test_get_net_with_segmentation_not_found(neutron_service, neutron):
-    segmentation_id = 101
-    neutron.list_networks.return_value = {"networks": []}
-
-    emsg = f"Network with {segmentation_id} segmentation id not found"
-    with pytest.raises(NetworkNotFoundException, match=emsg):
-        neutron_service.get_net_with_segmentation(segmentation_id)
 
 
 def test_generate_subnet_not_found_free():
