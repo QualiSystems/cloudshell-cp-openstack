@@ -290,6 +290,11 @@ def neutron():
 
 
 @pytest.fixture()
+def glance():
+    return MagicMock()
+
+
+@pytest.fixture()
 def os_api(resource_conf, logger, os_session, nova, neutron, monkeypatch):
     api = OSApi(resource_conf, logger)
     monkeypatch.setattr(api, "_os_session", os_session)
@@ -469,10 +474,11 @@ def sleepless(monkeypatch):
 
 
 @pytest.fixture()
-def os_api_v2(logger, os_session, nova, neutron, monkeypatch):
+def os_api_v2(logger, os_session, nova, neutron, glance, monkeypatch):
     api = OsApi(os_session, logger)
     monkeypatch.setattr(api, "_nova", nova)
     monkeypatch.setattr(api, "_neutron", neutron)
+    monkeypatch.setattr(api, "_glance", glance)
     return api
 
 
