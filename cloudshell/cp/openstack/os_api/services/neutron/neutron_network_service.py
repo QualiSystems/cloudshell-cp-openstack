@@ -11,7 +11,6 @@ from cloudshell.cp.openstack.exceptions import (
     NetworkNotFoundException,
     SubnetNotFoundException,
 )
-from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
 
 class NeutronService:
@@ -71,51 +70,6 @@ class NeutronService:
             neutron_exceptions.NetworkNotFoundClient,
         ):
             pass
-
-    def get_or_create_net_with_segmentation_id(
-        self,
-        segmentation_id: int,
-        resource_conf: OSResourceConfig,
-        net_prefix: str,
-        qnq: bool = False,
-    ) -> dict:
-        try:
-            net = self._create_net_with_segmentation_id(
-                segmentation_id, resource_conf, net_prefix, qnq
-            )
-        except neutron_exceptions.Conflict:
-            net = self.get_net_with_segmentation(segmentation_id)
-        return net
-
-    def _create_net_with_segmentation_id(
-        self,
-        segmentation_id: int,
-        resource_conf: OSResourceConfig,
-        net_prefix: str,
-        qnq: bool = False,
-    ) -> dict:
-        data = {
-            "provider:network_type": resource_conf.vlan_type.lower(),
-            "provider:segmentation_id": segmentation_id,
-            "name": f"{net_prefix}_{segmentation_id}",
-            "admin_state_up": True,
-        }
-        if qnq:
-            data["vlan_transparent"] = True
-        if resource_conf.vlan_type.lower() == "vlan":
-            data["provider:physical_network"] = resource_conf.os_physical_int_name
-        return self._neutron.create_network({"network": data})["network"]
-
-    def get_net_with_segmentation(self, segmentation_id: int) -> dict:
-        net_dict = self._neutron.list_networks(
-            **{"provider:segmentation_id": segmentation_id}
-        )
-        try:
-            net = net_dict["networks"][0]
-        except IndexError:
-            emsg = f"Network with {segmentation_id} segmentation id not found"
-            raise NetworkNotFoundException(emsg)
-        return net
 
     def create_floating_ip(self, subnet_id: str, port_id: str) -> str:
         subnet_dict = self.get_subnet(id=subnet_id)
