@@ -3,12 +3,15 @@ from __future__ import annotations
 from logging import Logger
 
 import attr
+from glanceclient.client import Client as GlanceClient_base
+from glanceclient.v2.client import Client as GlanceClient
 from keystoneauth1.identity.v3 import Password as KeyStoneAuth
 from keystoneauth1.session import Session as KeyStoneSession
 from neutronclient.v2_0.client import Client as NeutronClient
 from novaclient.client import Client as NovaClient_base
 from novaclient.v2.client import Client as NovaClient
 
+from cloudshell.cp.openstack.os_api.models import Image as _Image
 from cloudshell.cp.openstack.os_api.models import Instance as _Instance
 from cloudshell.cp.openstack.os_api.models import Interface as _Interface
 from cloudshell.cp.openstack.os_api.models import Network as _Network
@@ -70,6 +73,10 @@ class OsApi:
         return NeutronClient(session=self._session, insecure=True)
 
     @cached_property
+    def _glance(self) -> GlanceClient:
+        return GlanceClient_base(self.API_VERSION, session=self._session)
+
+    @cached_property
     def Port(self) -> type[_Port]:
         class Port(_Port):
             api = self
@@ -122,3 +129,12 @@ class OsApi:
             _logger = self._logger
 
         return Interface
+
+    @cached_property
+    def Image(self) -> type[_Image]:
+        class Image(_Image):
+            api = self
+            _glance = self._glance
+            _logger = self._logger
+
+        return Image

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from enum import Enum
 from logging import Logger
 from typing import TYPE_CHECKING, ClassVar, Generator
 
@@ -10,12 +11,34 @@ from novaclient import exceptions as nova_exc
 from novaclient.v2.client import Client as NovaClient
 from novaclient.v2.servers import Server as OpenStackInstance
 
-from cloudshell.cp.openstack.exceptions import InstanceNotFound, PortIsNotAttached
+from cloudshell.cp.openstack.exceptions import (
+    InstanceErrorStateException,
+    InstanceNotFound,
+    PortIsNotAttached,
+)
 from cloudshell.cp.openstack.utils.cached_property import cached_property
 
 if TYPE_CHECKING:
     from cloudshell.cp.openstack.api.api import OsApi
     from cloudshell.cp.openstack.os_api.models import Network, Port
+
+
+class InstanceStatus(Enum):
+    ACTIVE = "ACTIVE"
+    ERROR = "ERROR"
+    BUILDING = "BUILDING"
+    STOPPED = "STOPPED"
+    DELETED = "DELETED"
+    SHUTOFF = "SHUTOFF"
+    OTHER = "_OTHER"
+
+    @classmethod
+    def _missing_(cls, value):
+        assert isinstance(value, str)
+        status = cls.__members__.get(value.upper(), cls.OTHER)
+        if status is cls.OTHER:
+            status._real_value = value
+        return status
 
 
 @attr.s(auto_attribs=True, str=False)
@@ -62,6 +85,10 @@ class Instance:
         return self._os_instance.name
 
     @property
+    def status(self) -> InstanceStatus:
+        return InstanceStatus(self._os_instance.status)
+
+    @property
     def interfaces(self) -> Generator[Interface, None, None]:
         self._logger.debug(f"Getting interfaces for the {self}")
         for iface in self._os_instance.interface_list():
@@ -79,17 +106,8 @@ class Instance:
                 self._os_instance, port_id=port.id, net_id=None, fixed_ip=None
             )
             iface = self.api.Interface.from_os_interface(self, os_iface)
-            self.wait_port_attached(port)
+            self._wait_port_attached(port)
         return iface
-
-    def wait_port_attached(self, port: Port, timeout: int = 5):
-        for _ in range(timeout):
-            for iface in self.interfaces:
-                if iface.port_id == port.id:
-                    return
-            else:
-                time.sleep(1)
-        raise PortIsNotAttached(port, self)
 
     def attach_network(self, network: Network) -> Interface:
         self._logger.debug(f"Attaching a {network} to the {self}")
@@ -118,6 +136,43 @@ class Instance:
             if iface.network_id == network.id:
                 return iface
         return None
+
+    def power_on(self) -> None:
+        if self.status is not InstanceStatus.ACTIVE:
+            self._os_instance.start()
+            self._wait_for_status(InstanceStatus.ACTIVE)
+
+    def power_off(self) -> None:
+        if self.status is not InstanceStatus.SHUTOFF:
+            self._os_instance.stop()
+            self._wait_for_status(InstanceStatus.SHUTOFF)
+
+    def create_snapshot(self, name: str) -> str:
+        """Create a snapshot.
+
+        :return: snapshot id
+        """
+        return self._os_instance.create_image(name)
+
+    def _wait_port_attached(self, port: Port, timeout: int = 5):
+        for _ in range(timeout):
+            for iface in self.interfaces:
+                if iface.port_id == port.id:
+                    return
+            else:
+                time.sleep(1)
+        raise PortIsNotAttached(port, self)
+
+    def _wait_for_status(
+        self,
+        status: InstanceStatus,
+        delay: int = 3,
+    ) -> None:
+        while self.status not in (status, InstanceStatus.ERROR):
+            time.sleep(delay)
+            self._os_instance.get()
+        if self.status is InstanceStatus.ERROR:
+            raise InstanceErrorStateException(self._os_instance.fault["message"])
 
 
 @attr.s(auto_attribs=True)

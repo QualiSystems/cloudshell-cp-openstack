@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from logging import Logger
 
-from glanceclient import exc as glance_exc
 from glanceclient.client import Client as GlanceClient_base
 from glanceclient.v2.client import Client as GlanceClient
 from keystoneauth1.session import Session as KeyStoneSession
@@ -102,13 +100,6 @@ class OSApi:
 
     def power_off_instance(self, instance: NovaServer):
         return self._get_nova_service(instance).power_off()
-
-    def create_snapshot(self, instance: NovaServer, name: str) -> str:
-        return self._get_nova_service(instance).create_snapshot(name)
-
-    def remove_image(self, image_id: str) -> None:
-        with suppress(glance_exc.HTTPNotFound):
-            self._glance.images.delete(image_id)
 
     def create_network(self, net_data: dict) -> dict:
         return self._neutron_service.create_network(net_data)
