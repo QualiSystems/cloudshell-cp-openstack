@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from logging import Logger
 from typing import Iterable
 
@@ -14,18 +16,26 @@ from cloudshell.cp.core.request_actions.models import (
     SaveAppResult,
 )
 
+from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.constants import OS_FROM_GLANCE_IMAGE_DEPLOYMENT_PATH
 from cloudshell.cp.openstack.models.attr_names import ResourceAttrName
-from cloudshell.cp.openstack.os_api.api import OSApi
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
 
-@attr.s(auto_attribs=True, slots=True, frozen=True)
+@attr.s(auto_attribs=True, slots=True)
 class SaveRestoreAppFlow:
-    _api: OSApi
     _resource_conf: OSResourceConfig
     _logger: Logger
     _cancellation_manager: CancellationContextManager
+    _api: OsApi = attr.ib()
+
+    @_api.default
+    def _connect_to_api(self):
+        return OsApi.from_config(self._resource_conf, self._logger)
+
+    def __attrs_post_init__(self):
+        if not self._api:
+            self._api = OsApi.from_config(self._resource_conf, self._logger)
 
     def save_apps(self, save_actions: Iterable[SaveApp]) -> str:
         results = list(map(self._save_app, save_actions))
@@ -48,16 +58,16 @@ class SaveRestoreAppFlow:
         }
 
         with self._cancellation_manager:
-            instance = self._api.get_instance(vm_uuid)
+            instance = self._api.Instance.get(vm_uuid)
 
         if attrs[ResourceAttrName.behavior_during_save] == "Power Off":
-            self._api.power_off_instance(instance)
+            instance.power_off()
 
         snapshot_name = f"Clone of {instance.name[:64]}"
-        snapshot_id = self._api.create_snapshot(instance, snapshot_name)
+        snapshot_id = instance.create_snapshot(snapshot_name)
 
         if attrs[ResourceAttrName.behavior_during_save] == "Power Off":
-            self._api.power_on_instance(instance)
+            instance.power_on()
 
         return SaveAppResult(
             save_action.actionId,
@@ -70,6 +80,6 @@ class SaveRestoreAppFlow:
         for artifact in action.actionParams.artifacts:
             snapshot_id = artifact.artifactRef
             with self._cancellation_manager:
-                self._api.remove_image(snapshot_id)
+                self._api.Image.remove_by_id(snapshot_id)
 
         return DeleteSavedAppResult(action.actionId)
