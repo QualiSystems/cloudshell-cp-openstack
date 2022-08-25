@@ -3,7 +3,14 @@ from unittest.mock import call
 
 import pytest
 
-from cloudshell.cp.core.request_actions.models import Attribute, SaveApp, SaveAppParams
+from cloudshell.cp.core.request_actions.models import (
+    Artifact,
+    Attribute,
+    DeleteSavedApp,
+    DeleteSavedAppParams,
+    SaveApp,
+    SaveAppParams,
+)
 
 from cloudshell.cp.openstack.constants import OS_FROM_GLANCE_IMAGE_DEPLOYMENT_PATH
 from cloudshell.cp.openstack.flows.save_restore_app import SaveRestoreAppFlow
@@ -71,3 +78,25 @@ def test_save_app(save_restore_flow, instance):
     instance.assert_has_calls(
         [call.stop(), call.create_image(f"Clone of {instance.name}"), call.start()]
     )
+
+
+def test_delete_saved_apps(save_restore_flow, glance):
+    action_id = "action id"
+    snapshot_id = "snapshot id"
+    action = DeleteSavedApp(
+        action_id,
+        DeleteSavedAppParams(
+            saveDeploymentModel="",
+            savedSandboxId="",
+            artifacts=[
+                Artifact(
+                    artifactRef=snapshot_id, artifactName=ResourceAttrName.image_id
+                )
+            ],
+            savedAppName="",
+        ),
+    )
+
+    save_restore_flow.delete_saved_apps([action])
+
+    glance.images.delete(snapshot_id)
