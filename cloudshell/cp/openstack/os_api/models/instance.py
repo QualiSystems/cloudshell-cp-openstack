@@ -117,6 +117,7 @@ class Instance:
         for iface in self.interfaces:
             if iface.network_id == network.id:
                 return iface
+        return None
 
 
 @attr.s(auto_attribs=True)

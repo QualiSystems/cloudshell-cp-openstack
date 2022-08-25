@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ipaddress import IPv4Network, ip_network
+from ipaddress import IPv4Network, IPv6Network, ip_network
 from logging import Logger
 from threading import Lock
 
@@ -96,7 +96,9 @@ class QVlanNetwork:
         return cidr
 
 
-def _get_first_free_subnet(blacklist_subnets: set[IPv4Network]) -> IPv4Network:
+def _get_first_free_subnet(
+    blacklist_subnets: set[IPv4Network | IPv6Network],
+) -> IPv4Network:
     first_second_octet_dict = {10: range(256), 172: range(16, 32), 192: (168,)}
     for first_octet, second_octets in first_second_octet_dict.items():
         for second_octet in second_octets:
