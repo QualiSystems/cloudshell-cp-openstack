@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import time
 from logging import Logger
-from typing import List
 
 from neutronclient.v2_0.client import Client as NeutronClient
 from neutronclient.v2_0.client import exceptions as neutron_exceptions
@@ -28,7 +27,7 @@ class NeutronService:
             raise NetworkException(f"Found more than one network with kwargs {kwargs}")
         return nets[0]
 
-    def _get_subnets(self, **kwargs) -> List[dict]:
+    def _get_subnets(self, **kwargs) -> list[dict]:
         subnets = self._neutron.list_subnets(**kwargs)["subnets"]
         if not subnets:
             raise SubnetNotFoundException(f"Subnet with kwargs {kwargs} not found")
