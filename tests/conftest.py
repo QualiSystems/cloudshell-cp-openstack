@@ -1,7 +1,6 @@
 import json
 import time
 import uuid
-from itertools import cycle
 from logging import Logger
 from typing import Iterable, Union
 from unittest.mock import MagicMock, Mock, create_autospec
@@ -27,6 +26,7 @@ from cloudshell.cp.openstack.models import OSNovaImgDeployApp, OSNovaImgDeployed
 from cloudshell.cp.openstack.os_api.api import OSApi
 from cloudshell.cp.openstack.os_api.commands.rollback import RollbackCommandsManager
 from cloudshell.cp.openstack.os_api.models import NetworkType
+from cloudshell.cp.openstack.os_api.models.instance import InstanceStatus
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
 
@@ -253,19 +253,35 @@ def nova_instance_factory():
 
             def _set_status(self, val):
                 if isinstance(val, str):
-                    self._i_status = cycle((val,))
+                    self._i_status = val
                 else:
                     self._i_status = iter(val)
 
             @property
             def status(self):
-                return next(self._i_status)
+                if isinstance(self._i_status, str):
+                    return self._i_status
+                else:
+                    return next(self._i_status)
 
             @status.setter
             def status(self, val):
                 self._set_status(val)
 
-        return NovaInstance()
+        inst = NovaInstance()
+        inst.name = "instance name"
+
+        def stop():
+            if isinstance(inst._i_status, str):
+                inst._set_status(InstanceStatus.SHUTOFF.value)
+
+        def start():
+            if isinstance(inst._i_status, str):
+                inst._set_status(InstanceStatus.ACTIVE.value)
+
+        inst.stop.side_effect = stop
+        inst.start.side_effect = start
+        return inst
 
     return wrapper
 
