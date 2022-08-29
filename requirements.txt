@@ -1,5 +1,6 @@
 cloudshell-cp-core~=2.1
 cloudshell-shell-standards~=1.1
+cloudshell-shell-core~=5.0
 cloudshell-shell-connectivity-flow~=3.0
 python-keystoneclient~=4.1
 python-novaclient~=17.2
