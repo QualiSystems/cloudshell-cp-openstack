@@ -13,7 +13,6 @@ def test_create_subnet(os_api_v2, neutron, simple_network):
     }
     neutron.create_subnet.assert_called_once_with({"subnet": data})
     assert subnet == os_api_v2.Subnet.from_dict(neutron.create_subnet()["subnet"])
-    assert str(subnet) == f"Subnet '{subnet_name}'"
 
 
 def test_get_subnet(os_api_v2, neutron, simple_network):
@@ -45,6 +44,7 @@ def test_get_subnet(os_api_v2, neutron, simple_network):
     assert subnet.name == subnet_name
     assert subnet.network_id == simple_network.id
     assert subnet.cidr == cidr
+    assert str(subnet) == f"Subnet '{subnet_name}'"
 
     assert subnet.network == simple_network
     neutron.show_network.assert_called_once_with(simple_network.id)
