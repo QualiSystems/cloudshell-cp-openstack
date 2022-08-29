@@ -9,7 +9,7 @@ from neutronclient.common import exceptions as neutron_exc
 
 from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.exceptions import FreeSubnetIsNotFound
-from cloudshell.cp.openstack.os_api.models import Network, NetworkType, Subnet
+from cloudshell.cp.openstack.os_api.models import Network, NetworkType
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 from cloudshell.cp.openstack.utils.cached_property import cached_property
 
@@ -58,7 +58,7 @@ class QVlanNetwork:
     def _get_subnet_name(network_id: str) -> str:
         return f"qs_subnet_{network_id}"
 
-    def _create_subnet(self, network: Network) -> Subnet:
+    def _create_subnet(self, network: Network) -> None:
         with self._subnet_lock:
             if not any(network.subnets):
                 cidr = self._get_unused_cidr()
@@ -67,14 +67,13 @@ class QVlanNetwork:
                     f"CIDR {cidr}"
                 )
                 name = self._get_subnet_name(network.id)
-                subnet = self._api.Subnet.create(
+                self._api.Subnet.create(
                     name,
                     network,
                     cidr=cidr,
                     ip_version=4,
                     gateway_ip=None,
                 )
-        return subnet
 
     def _get_unused_cidr(self) -> str:
         """Gets unused CIDR that excludes the reserved CIDRs.
