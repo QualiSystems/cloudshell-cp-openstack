@@ -102,10 +102,16 @@ class NovaService:
             server_create_args["scheduler_hints"] = {
                 "group": deploy_app.affinity_group_id
             }
+
+        user_data = ""
         if deploy_app.auto_udev:
-            server_create_args.update({"userdata": _get_udev_rules()})
+            user_data = _get_udev_rules()
         if deploy_app.user_data:
-            server_create_args.update({"userdata": deploy_app.user_data})
+            if user_data:
+                user_data += "\n"
+            user_data += deploy_app.user_data
+        server_create_args.update({"userdata": user_data})
+
         return server_create_args
 
     @classmethod
