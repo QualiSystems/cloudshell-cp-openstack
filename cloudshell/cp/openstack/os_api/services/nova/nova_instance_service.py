@@ -104,6 +104,8 @@ class NovaService:
             }
         if deploy_app.auto_udev:
             server_create_args.update({"userdata": _get_udev_rules()})
+        if deploy_app.user_data:
+            server_create_args.update({"userdata": deploy_app.user_data})
         return server_create_args
 
     @classmethod

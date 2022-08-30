@@ -90,5 +90,6 @@ class OSNovaImgDeployApp(DeployApp):
         ATTR_NAME.floating_ip_subnet_id
     )
     auto_udev = ResourceBoolAttrRODeploymentPath(ATTR_NAME.auto_udev)
+    user_data = ResourceAttrRODeploymentPath(ATTR_NAME.user_data)
     inbound_ports = ResourceInboundPortsRO(ATTR_NAME.inbound_ports)
     behavior_during_save = ResourceAttrRODeploymentPath(ATTR_NAME.behavior_during_save)
