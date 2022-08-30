@@ -6,5 +6,6 @@ class ResourceAttrName:
     affinity_group_id = "Affinity Group ID"
     floating_ip_subnet_id = "Floating IP Subnet ID"
     auto_udev = "Auto udev"
+    user_data = "User data"
     inbound_ports = "Inbound Ports"
     behavior_during_save = "Behavior during save"
