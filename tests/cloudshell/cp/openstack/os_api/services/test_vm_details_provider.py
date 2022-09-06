@@ -38,7 +38,7 @@ def test_create(instance, os_api, neutron):
         "Flavor": flavor.name,
         "Availability Zone": getattr(instance, "OS-EXT-AZ:availability_zone"),
         "CPU": f"{flavor.vcpus} vCPU",
-        "Memory": f"{flavor.ram} GB",
+        "Memory": f"{flavor.ram} MB",
         "Disk Size": f"{flavor.disk} GB",
     }
 
