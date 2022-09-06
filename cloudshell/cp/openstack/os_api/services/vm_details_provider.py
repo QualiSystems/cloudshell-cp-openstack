@@ -33,7 +33,8 @@ def _get_vm_instance_data(instance: NovaServer, api: OSApi) -> List[VmDetailsPro
         VmDetailsProperty("Flavor", flavor.name),
         VmDetailsProperty("Availability Zone", available_zone),
         VmDetailsProperty("CPU", f"{flavor.vcpus} vCPU"),
-        VmDetailsProperty("Memory", f"{flavor.ram} GB"),
+        # OpenStack returns RAM in MB and disk in GB
+        VmDetailsProperty("Memory", f"{flavor.ram} MB"),
         VmDetailsProperty("Disk Size", f"{flavor.disk} GB"),
     ]
 
