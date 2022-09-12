@@ -103,6 +103,11 @@ class NetworkInUse(NetworkException):
         super().__init__(f"{network} in use")
 
 
+class NetworkWithVlanIsNotCreatedByCloudShell(NetworkException):
+    def __init__(self, network: Network, vlan_id: int):
+        super().__init__(f"{network} with VLAN {vlan_id} is not created by CloudShell")
+
+
 class SubnetNotFound(NetworkException):
     def __init__(self, *, id_: str | None = None, name: str | None = None):
         assert id_ or name

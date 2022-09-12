@@ -8,7 +8,10 @@ import attr
 from neutronclient.common import exceptions as neutron_exc
 
 from cloudshell.cp.openstack.api.api import OsApi
-from cloudshell.cp.openstack.exceptions import FreeSubnetIsNotFound
+from cloudshell.cp.openstack.exceptions import (
+    FreeSubnetIsNotFound,
+    NetworkWithVlanIsNotCreatedByCloudShell,
+)
 from cloudshell.cp.openstack.os_api.models import Network, NetworkType
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 from cloudshell.cp.openstack.utils.cached_property import cached_property
@@ -23,6 +26,9 @@ class QVlanNetwork:
 
     def get_network(self, vlan_id: int) -> Network:
         network = self._api.Network.find_by_vlan_id(vlan_id)
+        expected_network_name = self._get_network_name(vlan_id)
+        if network.name != expected_network_name:
+            raise NetworkWithVlanIsNotCreatedByCloudShell(network, vlan_id)
         self._logger.info(f"Using the {network}")
         return network
 
