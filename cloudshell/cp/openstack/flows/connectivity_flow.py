@@ -71,15 +71,22 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         )
 
     def _remove_vlan(self, action: ConnectivityActionModel) -> ConnectivityActionResult:
-        vlan_id = int(action.connection_params.vlan_id)
+        vlan_id = int(action.connection_params.vlan_service_attrs.vlan_id)
         vm_uuid = action.custom_action_attrs.vm_uuid
         port_mode = action.connection_params.mode
         mac_address = action.connector_attrs.interface
+        network_id_or_name = action.connection_params.vlan_service_attrs.virtual_network
+        network_id_or_name = (
+            network_id_or_name if network_id_or_name != str(vlan_id) else None
+        )
 
         instance = self._api.Instance.get(vm_uuid)
         self._logger.info(f"Start removing VLAN {vlan_id} from the {instance}")
         try:
-            vlan_network = self._q_vlan_network.get_network(vlan_id)
+            if network_id_or_name:
+                vlan_network = self._get_existed_network(network_id_or_name)
+            else:
+                vlan_network = self._q_vlan_network.get_network(vlan_id)
         except NetworkNotFound:
             self._logger.debug(f"VLAN {vlan_id} already removed")
         else:
@@ -88,7 +95,8 @@ class ConnectivityFlow(AbstractConnectivityFlow):
             else:
                 instance.detach_network(vlan_network)
 
-            vlan_network.remove(raise_in_use=False)
+            if not network_id_or_name:  # we don't remove existed network
+                vlan_network.remove(raise_in_use=False)
 
         msg = "Removing VLAN successfully completed"
         return ConnectivityActionResult.success_result_vm(action, msg, mac_address)
