@@ -16,6 +16,7 @@ from cloudshell.shell.flows.connectivity.parse_request_service import (
 
 from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.exceptions import NetworkNotFound
+from cloudshell.cp.openstack.models.connectivity_models import OsConnectivityActionModel
 from cloudshell.cp.openstack.os_api.models import Network
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 from cloudshell.cp.openstack.services.network_service import QVlanNetwork
@@ -36,12 +37,13 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         self._q_vlan_network = QVlanNetwork(self._api, resource_conf, logger)
         self._q_trunk = QTrunk(self._api, resource_conf, logger)
 
-    def _set_vlan(self, action: ConnectivityActionModel) -> ConnectivityActionResult:
+    def _set_vlan(self, action: OsConnectivityActionModel) -> ConnectivityActionResult:
         vlan_id = int(action.connection_params.vlan_service_attrs.vlan_id)
         vm_uuid = action.custom_action_attrs.vm_uuid
         qnq = action.connection_params.vlan_service_attrs.qnq
         port_mode = action.connection_params.mode
         network_id_or_name = action.connection_params.vlan_service_attrs.virtual_network
+        subnet_cidr_data = action.connection_params.vlan_service_attrs.subnet_cidr
 
         instance = self._api.Instance.get(vm_uuid)
         self._logger.info(f"Start adding VLAN {vlan_id} to the {instance}")
@@ -50,7 +52,9 @@ class ConnectivityFlow(AbstractConnectivityFlow):
             # if network name or id is set, we use it without additional checks
             vlan_network = self._get_existed_network(network_id_or_name)
         else:
-            vlan_network = self._q_vlan_network.get_or_create_network(vlan_id, qnq)
+            vlan_network = self._q_vlan_network.get_or_create_network(
+                vlan_id, qnq, subnet_cidr_data
+            )
 
         try:
             if port_mode is ConnectionModeEnum.TRUNK:

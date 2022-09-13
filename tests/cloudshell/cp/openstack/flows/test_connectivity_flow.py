@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from unittest.mock import Mock
 
 import pytest
@@ -5,8 +7,6 @@ import pytest
 from cloudshell.shell.flows.connectivity.models.connectivity_model import (
     ActionTargetModel,
     ConnectionModeEnum,
-    ConnectionParamsModel,
-    ConnectivityActionModel,
     ConnectivityTypeEnum,
 )
 from cloudshell.shell.flows.connectivity.parse_request_service import (
@@ -15,6 +15,7 @@ from cloudshell.shell.flows.connectivity.parse_request_service import (
 
 from cloudshell.cp.openstack.exceptions import NetworkNotFound
 from cloudshell.cp.openstack.flows import ConnectivityFlow
+from cloudshell.cp.openstack.models.connectivity_models import OsConnectivityActionModel
 from cloudshell.cp.openstack.services.network_service import QVlanNetwork
 
 
@@ -34,18 +35,26 @@ def create_connectivity_action():
         qnq: bool,
         vm_uuid: str,
         connectivity_type: ConnectivityTypeEnum,
+        virtual_network: str | None = None,
+        subnet_cidr: str | None = None,
     ):
-        return ConnectivityActionModel(
+        return OsConnectivityActionModel(
             connectionId="id",
-            connectionParams=ConnectionParamsModel(
-                vlanId=str(vlan),
-                mode=port_mode,
-                type="type",
-                vlanServiceAttributes=[
+            connectionParams={
+                "vlanId": virtual_network or str(vlan),
+                "mode": port_mode,
+                "type": "type",
+                "vlanServiceAttributes": [
+                    {"attributeName": "VLAN ID", "attributeValue": str(vlan)},
                     {"attributeName": "QnQ", "attributeValue": qnq},
                     {"attributeName": "CTag", "attributeValue": ""},
+                    {
+                        "attributeName": "Virtual Network",
+                        "attributeValue": virtual_network or str(vlan),
+                    },
+                    {"attributeName": "Subnet CIDR", "attributeValue": subnet_cidr},
                 ],
-            ),
+            },
             connectorAttributes=[{"attributeName": "Interface", "attributeValue": ""}],
             actionTarget=ActionTargetModel(fullName="", fullAddress="full address"),
             customActionAttributes=[
@@ -104,6 +113,7 @@ def test_add_vlan_flow(
                 "cidr": "10.0.0.0/24",
                 "ip_version": 4,
                 "gateway_ip": None,
+                "allocation_pools": [],
             }
         }
     )
@@ -164,7 +174,7 @@ def test_remove_vlan_flow(
 ):
     vlan = 12
     vm_uid = "vm uid"
-    net_name = "net name"
+    net_name = QVlanNetwork._get_network_name(vlan)
     net_id = "net id"
     port_id = "port id"
     net_dict = {

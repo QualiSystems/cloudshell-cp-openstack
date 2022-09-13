@@ -10,6 +10,7 @@ def test_create_subnet(os_api_v2, neutron, simple_network):
         "cidr": cidr,
         "ip_version": 4,
         "gateway_ip": None,
+        "allocation_pools": [],
     }
     neutron.create_subnet.assert_called_once_with({"subnet": data})
     assert subnet == os_api_v2.Subnet.from_dict(neutron.create_subnet()["subnet"])
@@ -27,6 +28,7 @@ def test_get_subnet(os_api_v2, neutron, simple_network):
             "ip_version": 4,
             "cidr": cidr,
             "gateway_ip": None,
+            "allocation_pools": [{"start": "192.168.1.1", "end": "192.168.1.254"}],
         }
     }
     neutron.show_network.return_value = {
