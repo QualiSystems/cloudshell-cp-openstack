@@ -12,6 +12,7 @@ from cloudshell.cp.openstack.exceptions import (
     FreeSubnetIsNotFound,
     NetworkWithVlanIsNotCreatedByCloudShell,
 )
+from cloudshell.cp.openstack.models.connectivity_models import SubnetCidrData
 from cloudshell.cp.openstack.os_api.models import Network, NetworkType
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 from cloudshell.cp.openstack.utils.cached_property import cached_property
@@ -32,13 +33,15 @@ class QVlanNetwork:
         self._logger.info(f"Using the {network}")
         return network
 
-    def get_or_create_network(self, vlan_id: int, qnq: bool) -> Network:
+    def get_or_create_network(
+        self, vlan_id: int, qnq: bool, subnet_cidr_data: SubnetCidrData | None
+    ) -> Network:
         try:
             network = self._create_network(vlan_id, qnq)
         except neutron_exc.Conflict:
             self._logger.info(f"Network with VLAN {vlan_id} already created")
             network = self.get_network(vlan_id)
-        self._create_subnet(network)
+        self._create_subnet(network, subnet_cidr_data)
         return network
 
     def _create_network(self, vlan_id: int, qnq: bool) -> Network:
@@ -64,10 +67,22 @@ class QVlanNetwork:
     def _get_subnet_name(network_id: str) -> str:
         return f"qs_subnet_{network_id}"
 
-    def _create_subnet(self, network: Network) -> None:
+    def _create_subnet(
+        self, network: Network, subnet_cidr_data: SubnetCidrData | None
+    ) -> None:
         with self._subnet_lock:
-            if not any(network.subnets):
-                cidr = self._get_unused_cidr()
+            if not self._is_correct_subnet_exists(network, subnet_cidr_data):
+                gateway = allocation_pools = None
+                if subnet_cidr_data:
+                    cidr = str(subnet_cidr_data.cidr)
+                    if subnet_cidr_data.gateway:
+                        gateway = str(subnet_cidr_data.gateway)
+                    if subnet_cidr_data.allocation_pool:
+                        first, last = map(str, subnet_cidr_data.allocation_pool)
+                        allocation_pools = [(first, last)]
+                else:
+                    cidr = self._get_unused_cidr()
+
                 self._logger.info(
                     f"The {network} is missing a subnet, adding a subnet with the "
                     f"CIDR {cidr}"
@@ -78,7 +93,8 @@ class QVlanNetwork:
                     network,
                     cidr=cidr,
                     ip_version=4,
-                    gateway_ip=None,
+                    gateway_ip=gateway,
+                    allocation_pools=allocation_pools,
                 )
 
     def _get_unused_cidr(self) -> str:
@@ -100,6 +116,26 @@ class QVlanNetwork:
         cidr = str(found_subnet)
         self._logger.info(f"Resolved CIDR: {cidr}")
         return cidr
+
+    @staticmethod
+    def _is_correct_subnet_exists(
+        network: Network, subnet_cidr_data: SubnetCidrData | None
+    ) -> bool:
+        """Return if the network has correct subnet.
+
+        The network should have any subnet if subnet_cidr_data is not specified or have
+        a subnet with correct CIDR
+        """
+        subnets = list(network.subnets)
+
+        if not subnets:
+            exists = False
+        elif not subnet_cidr_data:
+            exists = True
+        else:
+            expected_cidr = str(subnet_cidr_data.cidr)
+            exists = any(subnet.cidr == expected_cidr for subnet in subnets)
+        return exists
 
 
 def _get_first_free_subnet(

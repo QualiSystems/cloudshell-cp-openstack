@@ -27,12 +27,16 @@ class Subnet:
     ip_version: int
     cidr: str
     gateway: str
+    allocation_pools: list[tuple[str, str]]
 
     def __str__(self) -> str:
         return f"Subnet '{self.name}'"
 
     @classmethod
     def from_dict(cls, subnet_dict: dict) -> Subnet:
+        allocation_pools = [
+            (pool["start"], pool["end"]) for pool in subnet_dict["allocation_pools"]
+        ]
         return cls(
             subnet_dict["id"],
             subnet_dict["name"],
@@ -40,6 +44,7 @@ class Subnet:
             ip_version=subnet_dict["ip_version"],
             cidr=subnet_dict["cidr"],
             gateway=subnet_dict["gateway_ip"],
+            allocation_pools=allocation_pools,
         )
 
     @classmethod
@@ -70,13 +75,18 @@ class Subnet:
         cidr: str,
         ip_version: int = 4,
         gateway_ip: str | None = None,
+        allocation_pools: list[tuple[str, str]] | None = None,
     ) -> Subnet:
+        ip_pools = [
+            {"start": pool[0], "end": pool[1]} for pool in allocation_pools or []
+        ]
         data = {
             "name": name,
             "network_id": network.id,
             "cidr": cidr,
             "ip_version": ip_version,
             "gateway_ip": gateway_ip,
+            "allocation_pools": ip_pools,
         }
         cls._logger.debug(f"Creating a subnet with params: {data}")
         subnet_dict = cls._neutron.create_subnet({"subnet": data})["subnet"]
