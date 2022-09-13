@@ -131,3 +131,11 @@ class NotSupportedConsoleType(OSBaseException):
             f"{self._console_type} is not supported. "
             f"You have to use {list(self._supported_types)}"
         )
+
+
+class SubnetCidrFormatError(OSBaseException):
+    def __init__(self):
+        super().__init__(
+            "Subnet CIDR format is wrong. Format - CIDR[;Gateway][;First_IP-Last_IP]. "
+            "For example, `192.168.10.0/24;192.168.10.1;192.168.10.30-192.168.10.50`"
+        )
