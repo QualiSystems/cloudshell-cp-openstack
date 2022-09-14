@@ -95,12 +95,6 @@ class OSApi:
     def get_instance(self, instance_id: str) -> NovaServer:
         return NovaService.get_with_id(self._nova, instance_id, self._logger).instance
 
-    def power_on_instance(self, instance: NovaServer):
-        return self._get_nova_service(instance).power_on()
-
-    def power_off_instance(self, instance: NovaServer):
-        return self._get_nova_service(instance).power_off()
-
     def create_network(self, net_data: dict) -> dict:
         return self._neutron_service.create_network(net_data)
 
