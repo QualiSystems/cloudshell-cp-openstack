@@ -117,24 +117,6 @@ def test_get_instance(os_api, nova):
     assert inst == nova.servers.find()
 
 
-def test_power_on_instance(os_api, instance):
-    instance.status = ["building", "building", "active", "active"]
-
-    os_api.power_on_instance(instance)
-
-    instance.start.assert_called_once_with()
-    instance.get.assert_called_once_with()
-
-
-def test_power_off_instance(os_api, instance):
-    instance.status = ["active", "active", "shutoff", "shutoff"]
-
-    os_api.power_off_instance(instance)
-
-    instance.stop.assert_called_once_with()
-    instance.get.assert_called_once_with()
-
-
 def test_create_network(os_api, neutron):
     net_data = {"name": "net name"}
 

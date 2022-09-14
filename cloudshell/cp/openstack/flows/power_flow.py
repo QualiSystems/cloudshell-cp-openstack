@@ -1,27 +1,19 @@
 from logging import Logger
 
+import attr
+
+from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.models import OSNovaImgDeployedApp
-from cloudshell.cp.openstack.os_api.api import OSApi
-from cloudshell.cp.openstack.utils.cached_property import cached_property
 
 
+@attr.s(auto_attribs=True, slots=True)
 class PowerFlow:
-    def __init__(
-        self,
-        os_api: OSApi,
-        deployed_app: OSNovaImgDeployedApp,
-        logger: Logger,
-    ):
-        self._api = os_api
-        self._deployed_app = deployed_app
-        self._logger = logger
-
-    @cached_property
-    def _instance(self):
-        return self._api.get_instance(self._deployed_app.vmdetails.uid)
+    _api: OsApi
+    _deployed_app: OSNovaImgDeployedApp
+    _logger: Logger
 
     def power_on(self):
-        self._api.power_on_instance(self._instance)
+        self._api.Instance.get(self._deployed_app.vmdetails.uid).power_on()
 
     def power_off(self):
-        self._api.power_off_instance(self._instance)
+        self._api.Instance.get(self._deployed_app.vmdetails.uid).power_off()
