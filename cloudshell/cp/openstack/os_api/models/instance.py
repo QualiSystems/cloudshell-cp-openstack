@@ -165,13 +165,19 @@ class Instance:
 
     def power_on(self) -> None:
         if self.status is not InstanceStatus.ACTIVE:
+            self._logger.debug(f"Starting the {self}")
             self._os_instance.start()
             self._wait_for_status(InstanceStatus.ACTIVE)
+        else:
+            self._logger.debug(f"The {self} already active")
 
     def power_off(self) -> None:
         if self.status is not InstanceStatus.SHUTOFF:
+            self._logger.debug(f"Stopping the {self}")
             self._os_instance.stop()
             self._wait_for_status(InstanceStatus.SHUTOFF)
+        else:
+            self._logger.debug(f"The {self} already stopped")
 
     def remove(self):
         self._logger.debug(f"Removing {self}")

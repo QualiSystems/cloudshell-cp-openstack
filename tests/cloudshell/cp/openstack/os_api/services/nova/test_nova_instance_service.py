@@ -105,26 +105,6 @@ def test_get_with_id_not_found(nova, logger):
         NovaService.get_with_id(nova, instance_id, logger)
 
 
-def test_power_on(instance, nova, logger):
-    instance.status = ("building", "building", "active", "active")
-    ns = NovaService(instance, nova, logger)
-
-    ns.power_on()
-
-    instance.start.assert_called_once_with()
-    instance.get.assert_called_once_with()
-
-
-def test_power_off(instance, nova, logger):
-    instance.status = ("active", "active", "shutoff", "shutoff")
-    ns = NovaService(instance, nova, logger)
-
-    ns.power_off()
-
-    instance.stop.assert_called_once_with()
-    instance.get.assert_called_once_with()
-
-
 def test_get_instance_image(nova_service):
     nova_service.get_instance_image()
 
