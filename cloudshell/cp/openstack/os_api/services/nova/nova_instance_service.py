@@ -146,16 +146,6 @@ class NovaService:
         if self.status is NovaInstanceStatus.ERROR:
             raise InstanceErrorStateException(self.instance.fault["message"])
 
-    def power_on(self):
-        if self.status is not NovaInstanceStatus.ACTIVE:
-            self.instance.start()
-            self._wait_for_status(NovaInstanceStatus.ACTIVE)
-
-    def power_off(self):
-        if self.status != NovaInstanceStatus.SHUTOFF:
-            self.instance.stop()
-            self._wait_for_status(NovaInstanceStatus.SHUTOFF)
-
     def get_instance_image(self) -> Image:
         return self._nova.glance.find_image(self.instance.image["id"])
 
