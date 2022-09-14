@@ -20,7 +20,7 @@ from cloudshell.cp.openstack.utils.cached_property import cached_property
 
 if TYPE_CHECKING:
     from cloudshell.cp.openstack.api.api import OsApi
-    from cloudshell.cp.openstack.os_api.models import Network, Port
+    from cloudshell.cp.openstack.os_api.models import Flavor, Image, Network, Port
 
 
 class InstanceStatus(Enum):
@@ -75,6 +75,32 @@ class Instance:
         cls._logger.debug("Get all instances")
         for os_instance in cls._nova.servers.list():
             yield cls(os_instance)
+
+    @classmethod
+    def create(
+        cls,
+        name: str,
+        image: Image,
+        flavor: Flavor,
+        network: Network,
+        availability_zone: str | None = None,
+        affinity_group_id: str | None = None,
+        user_data: str | None = None,
+    ) -> Instance:
+        nics = [{"net-id": network.id}]
+        scheduler_hints = {"group": affinity_group_id} if affinity_group_id else None
+
+        os_inst = cls._nova.servers.create(
+            name,
+            image.id,
+            flavor.id,
+            nics=nics,
+            userdata=user_data,
+            availability_zone=availability_zone,
+            scheduler_hints=scheduler_hints,
+        )
+        inst = cls(os_inst)
+        return inst
 
     @property  # noqa: A003
     def id(self) -> str:  # noqa: A003
@@ -146,6 +172,10 @@ class Instance:
         if self.status is not InstanceStatus.SHUTOFF:
             self._os_instance.stop()
             self._wait_for_status(InstanceStatus.SHUTOFF)
+
+    def remove(self):
+        self._logger.debug(f"Removing {self}")
+        self._os_instance.delete()
 
     def create_snapshot(self, name: str) -> str:
         """Create a snapshot.
