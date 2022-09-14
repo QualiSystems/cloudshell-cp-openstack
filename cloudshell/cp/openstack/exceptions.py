@@ -47,6 +47,17 @@ class ImageNotFound(OSBaseException):
         super().__init__(f"Image with id '{id_}' not found")
 
 
+class FlavorNotFound(OSBaseException):
+    def __init__(self, *, id_: str | None = None, name: str | None = None):
+        assert id_ or name
+        if id_:
+            msg = f"Flavor with id '{id_}' not found"
+        else:
+            msg = f"Flavor with name '{name}' not found"
+
+        super().__init__(msg)
+
+
 class PortNotFound(NetworkException):
     def __init__(self, *, id_: str | None = None, name: str | None = None):
         assert id_ or name

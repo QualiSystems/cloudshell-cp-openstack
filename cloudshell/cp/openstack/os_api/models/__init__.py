@@ -1,3 +1,4 @@
+from .flavor import Flavor
 from .image import Image
 from .instance import Instance, Interface
 from .network import Network, NetworkType
@@ -14,4 +15,5 @@ __all__ = [
     "Subnet",
     "Interface",
     "Image",
+    "Flavor",
 ]
