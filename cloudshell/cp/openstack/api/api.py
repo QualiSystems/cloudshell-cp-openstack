@@ -11,6 +11,7 @@ from neutronclient.v2_0.client import Client as NeutronClient
 from novaclient.client import Client as NovaClient_base
 from novaclient.v2.client import Client as NovaClient
 
+from cloudshell.cp.openstack.os_api.models import Flavor as _Flavor
 from cloudshell.cp.openstack.os_api.models import Image as _Image
 from cloudshell.cp.openstack.os_api.models import Instance as _Instance
 from cloudshell.cp.openstack.os_api.models import Interface as _Interface
@@ -138,3 +139,12 @@ class OsApi:
             _logger = self._logger
 
         return Image
+
+    @cached_property
+    def Flavor(self) -> type[_Flavor]:
+        class Flavor(_Flavor):
+            api = self
+            _nova = self._nova
+            _logger = self._logger
+
+        return Flavor
