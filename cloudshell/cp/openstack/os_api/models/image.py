@@ -45,10 +45,6 @@ class Image:
         for image_dict in cls._glance.images.list():
             yield cls.from_dict(image_dict)
 
-    @classmethod
-    def remove_by_id(cls, id_: str) -> None:
-        with suppress(glance_exc.HTTPNotFound):
-            cls._glance.images.delete(id_)
-
     def remove(self) -> None:
-        self.remove_by_id(self.id)
+        with suppress(glance_exc.HTTPNotFound):
+            self._glance.images.delete(self.id)
