@@ -100,6 +100,7 @@ class Instance:
             scheduler_hints=scheduler_hints,
         )
         inst = cls(os_inst)
+        inst._wait_for_status(InstanceStatus.ACTIVE)
         return inst
 
     @property  # noqa: A003
