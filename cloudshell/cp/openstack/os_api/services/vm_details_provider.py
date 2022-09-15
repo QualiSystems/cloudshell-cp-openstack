@@ -48,6 +48,7 @@ def _get_vm_network_data(
         net_name = net_dict["name"]
         private_ip = get_private_ip(instance, net_name)
         is_primary_and_predefined = mgmt_net_id == interface.net_id
+        # todo why we add it to every interface and check for the whole instance??
         public_ip = get_floating_ip(instance)
 
         network_data = [
