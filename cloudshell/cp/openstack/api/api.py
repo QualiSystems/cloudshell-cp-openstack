@@ -12,6 +12,7 @@ from novaclient.client import Client as NovaClient_base
 from novaclient.v2.client import Client as NovaClient
 
 from cloudshell.cp.openstack.os_api.models import Flavor as _Flavor
+from cloudshell.cp.openstack.os_api.models import FloatingIp as _FloatingIp
 from cloudshell.cp.openstack.os_api.models import Image as _Image
 from cloudshell.cp.openstack.os_api.models import Instance as _Instance
 from cloudshell.cp.openstack.os_api.models import Interface as _Interface
@@ -103,6 +104,15 @@ class OsApi:
             _logger = self._logger
 
         return Subnet
+
+    @cached_property
+    def FloatingIp(self) -> type[_FloatingIp]:
+        class FloatingIp(_FloatingIp):
+            api = self
+            _neutron = self._neutron
+            _logger = self._logger
+
+        return FloatingIp
 
     @cached_property
     def Trunk(self) -> type[_Trunk]:

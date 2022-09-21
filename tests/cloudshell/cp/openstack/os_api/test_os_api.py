@@ -32,27 +32,6 @@ def test_get_network_id_for_subnet_id(os_api, neutron):
     assert net_id == neutron.list_subnets()["subnets"][0]["network_id"]
 
 
-def test_create_floating_ip(os_api, neutron):
-    subnet_id = "subnet id"
-    port_id = "port id"
-
-    ip = os_api.create_floating_ip(subnet_id, port_id)
-
-    neutron.list_subnets.assert_called_once_with(id=subnet_id)
-    neutron.create_floatingip.assert_called_once_with(
-        {
-            "floatingip": {
-                "floating_network_id": neutron.list_subnets()["subnets"][0][
-                    "network_id"
-                ],
-                "subnet_id": subnet_id,
-                "port_id": port_id,
-            }
-        }
-    )
-    assert ip == neutron.create_floatingip()["floatingip"]["floating_ip_address"]
-
-
 def test_delete_floating_ip(os_api, neutron):
     ip = "floating ip"
 
