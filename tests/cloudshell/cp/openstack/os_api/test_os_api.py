@@ -3,30 +3,6 @@ from unittest.mock import Mock, call
 import pytest
 
 from cloudshell.cp.openstack.models.deploy_app import SecurityGroupRule
-from cloudshell.cp.openstack.os_api.services.nova.nova_instance_service import (
-    _get_udev_rules,
-)
-
-
-def test_create_instance(
-    os_api,
-    deploy_app,
-    cancellation_context_manager,
-    nova,
-    uuid_mocked,
-    resource_conf,
-):
-    os_api.create_instance(deploy_app, cancellation_context_manager)
-
-    nova.servers.create.assert_called_once_with(
-        **{
-            "name": f'{deploy_app.app_name}-{str(uuid_mocked).split("-")[0]}',
-            "image": nova.glance.find_image(deploy_app.image_id),
-            "flavor": nova.flavors.find(name=deploy_app.instance_flavor),
-            "nics": [{"net-id": resource_conf.os_mgmt_net_id}],
-            "userdata": _get_udev_rules(),
-        }
-    )
 
 
 def test_get_network_dict(os_api, neutron):

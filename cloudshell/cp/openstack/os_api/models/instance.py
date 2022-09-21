@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import time
+from contextlib import nullcontext
 from enum import Enum
 from logging import Logger
-from typing import TYPE_CHECKING, ClassVar, Generator
+from typing import TYPE_CHECKING, ClassVar, ContextManager, Generator
 
 import attr
 from neutronclient.v2_0.client import Client as NeutronClient
@@ -12,7 +13,7 @@ from novaclient.v2.client import Client as NovaClient
 from novaclient.v2.servers import Server as OpenStackInstance
 
 from cloudshell.cp.openstack.exceptions import (
-    InstanceErrorStateException,
+    InstanceErrorState,
     InstanceNotFound,
     PortIsNotAttached,
 )
@@ -86,21 +87,33 @@ class Instance:
         availability_zone: str | None = None,
         affinity_group_id: str | None = None,
         user_data: str | None = None,
+        cancellation_manager: ContextManager = nullcontext(),
     ) -> Instance:
-        nics = [{"net-id": network.id}]
+        cls._logger.info(
+            f"Creating an Instance '{name}' using the {image}, the {flavor}, "
+            f"the {network}"
+        )
         scheduler_hints = {"group": affinity_group_id} if affinity_group_id else None
 
         os_inst = cls._nova.servers.create(
             name,
             image.id,
             flavor.id,
-            nics=nics,
+            nics=[{"net-id": network.id}],
             userdata=user_data,
             availability_zone=availability_zone,
             scheduler_hints=scheduler_hints,
         )
         inst = cls(os_inst)
-        inst._wait_for_status(InstanceStatus.ACTIVE)
+
+        try:
+            inst._wait_for_status(
+                InstanceStatus.ACTIVE, cancellation_manager=cancellation_manager
+            )
+        except Exception:
+            inst.remove()
+            raise
+
         return inst
 
     @property  # noqa: A003
@@ -204,12 +217,14 @@ class Instance:
         self,
         status: InstanceStatus,
         delay: int = 3,
+        cancellation_manager: ContextManager = nullcontext(),
     ) -> None:
         while self.status not in (status, InstanceStatus.ERROR):
             time.sleep(delay)
-            self._os_instance.get()
+            with cancellation_manager:
+                self._os_instance.get()
         if self.status is InstanceStatus.ERROR:
-            raise InstanceErrorStateException(self._os_instance.fault["message"])
+            raise InstanceErrorState(self, self._os_instance.fault["message"])
 
 
 @attr.s(auto_attribs=True)
