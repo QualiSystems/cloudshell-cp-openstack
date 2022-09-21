@@ -1,4 +1,5 @@
 from .flavor import Flavor
+from .floating_ip import FloatingIp
 from .image import Image
 from .instance import Instance, Interface
 from .network import Network, NetworkType
@@ -16,4 +17,5 @@ __all__ = [
     "Interface",
     "Image",
     "Flavor",
+    "FloatingIp",
 ]

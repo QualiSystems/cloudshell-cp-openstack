@@ -3,85 +3,68 @@ from unittest.mock import Mock
 import pytest
 
 from cloudshell.cp.openstack.os_api.commands import CreateFloatingIP
+from cloudshell.cp.openstack.os_api.models import FloatingIp
 
 
 @pytest.fixture()
-def os_api():
+def api():
     return Mock(name="OS API")
 
 
-def test_create_floating_ip(
-    os_api,
-    resource_conf,
-    deploy_app,
-    instance,
+@pytest.fixture()
+def iface():
+    return Mock(name="iface")
+
+
+@pytest.fixture()
+def instance(iface):
+    return Mock(name="instance", interfaces=iter((iface,)))
+
+
+@pytest.fixture()
+def command(
     rollback_manager,
     cancellation_context_manager,
+    api,
+    deploy_app,
+    resource_conf,
+    instance,
 ):
-    port_id = "port id"
-    instance.interface_list.return_value = [Mock(port_id=port_id)]
-    command = CreateFloatingIP(
+    return CreateFloatingIP(
         rollback_manager,
         cancellation_context_manager,
-        os_api,
+        api,
         resource_conf,
         deploy_app,
         instance,
     )
 
-    ip = command.execute()
 
-    os_api.create_floating_ip.assert_called_once_with(
-        deploy_app.floating_ip_subnet_id, port_id
-    )
-    assert ip == os_api.create_floating_ip()
+def test_create_floating_ip(command, api, iface, deploy_app):
+    command.execute()
+
+    api.Subnet.get.assert_called_once_with(deploy_app.floating_ip_subnet_id)
+    api.FloatingIp.create.assert_called_once_with(api.Subnet.get(), iface.port)
 
 
-def test_create_floating_ip_from_r_conf(
-    os_api,
-    resource_conf,
-    deploy_app,
-    instance,
-    rollback_manager,
-    cancellation_context_manager,
+def test_create_called_with_floating_subnet_from_config(
+    command, api, iface, deploy_app, resource_conf
 ):
-    deploy_app.floating_ip_subnet_id = ""
-    port_id = "port id"
-    instance.interface_list.return_value = [Mock(port_id=port_id)]
-    command = CreateFloatingIP(
-        rollback_manager,
-        cancellation_context_manager,
-        os_api,
-        resource_conf,
-        deploy_app,
-        instance,
+    deploy_app.floating_ip_subnet_id = None
+
+    command.execute()
+
+    api.Subnet.get.assert_called_once_with(resource_conf.floating_ip_subnet_id)
+    api.FloatingIp.create.assert_called_once_with(
+        api.Subnet.get(resource_conf.floating_ip_subnet_id),
+        iface.port,
     )
 
-    ip = command.execute()
 
-    os_api.create_floating_ip.assert_called_once_with(
-        resource_conf.floating_ip_subnet_id, port_id
-    )
-    assert ip == os_api.create_floating_ip()
-
-
-def test_rollback_create_floating_ip(
-    os_api,
-    resource_conf,
-    deploy_app,
-    instance,
-    rollback_manager,
-    cancellation_context_manager,
-):
-    command = CreateFloatingIP(
-        rollback_manager,
-        cancellation_context_manager,
-        os_api,
-        resource_conf,
-        deploy_app,
-        instance,
-    )
+def test_rollback(command, os_api_v2):
+    floating_ip = Mock(spec_set=FloatingIp)
+    command._ip = floating_ip
 
     command.rollback()
 
-    os_api.delete_floating_ip.assert_called_once_with(command._ip)
+    floating_ip.remove.assert_called_once_with()

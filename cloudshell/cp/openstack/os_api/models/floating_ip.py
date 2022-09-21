@@ -22,10 +22,10 @@ class FloatingIp:
     _logger: ClassVar[Logger]
 
     id: str  # noqa: A003
-    floating_ip_address: str
+    ip_address: str
 
     def __str__(self) -> str:
-        return f"Floating IP '{self.floating_ip_address}'"
+        return f"Floating IP '{self.ip_address}'"
 
     @classmethod
     def from_dict(cls, port_dict: dict) -> FloatingIp:
