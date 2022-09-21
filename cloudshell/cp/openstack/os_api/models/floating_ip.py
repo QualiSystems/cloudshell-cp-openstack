@@ -35,8 +35,7 @@ class FloatingIp:
     def get(cls, id_: str) -> FloatingIp:
         cls._logger.debug(f"Getting a floating IP with ID '{id_}'")
         try:
-            cls._neutron.show_floatingip(id_)
-            data_dict = cls._neutron.show_port(id_)["floatingip"]
+            data_dict = cls._neutron.show_floatingip(id_)["floatingip"]
         except neutron_exc.NotFound:
             raise FloatingIpNotFound(id_=id_)
         return cls.from_dict(data_dict)
@@ -44,7 +43,7 @@ class FloatingIp:
     @classmethod  # noqa: A003
     def all(cls) -> Generator[FloatingIp, None, None]:  # noqa: A003
         cls._logger.debug("Get all floating IPs")
-        for data_dict in cls._neutron.list_ports()["floatingips"]:
+        for data_dict in cls._neutron.list_floatingips()["floatingips"]:
             yield cls.from_dict(data_dict)
 
     @classmethod
