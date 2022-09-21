@@ -18,6 +18,7 @@ from cloudshell.cp.openstack.os_api.models import Instance as _Instance
 from cloudshell.cp.openstack.os_api.models import Interface as _Interface
 from cloudshell.cp.openstack.os_api.models import Network as _Network
 from cloudshell.cp.openstack.os_api.models import Port as _Port
+from cloudshell.cp.openstack.os_api.models import SecurityGroup as _SecurityGroup
 from cloudshell.cp.openstack.os_api.models import Subnet as _Subnet
 from cloudshell.cp.openstack.os_api.models import Trunk as _Trunk
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
@@ -113,6 +114,15 @@ class OsApi:
             _logger = self._logger
 
         return FloatingIp
+
+    @cached_property
+    def SecurityGroup(self) -> type[_SecurityGroup]:
+        class SecurityGroup(_SecurityGroup):
+            api = self
+            _neutron = self._neutron
+            _logger = self._logger
+
+        return SecurityGroup
 
     @cached_property
     def Trunk(self) -> type[_Trunk]:
