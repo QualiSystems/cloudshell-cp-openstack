@@ -42,6 +42,11 @@ class InstanceNotFound(OSBaseException):
         super().__init__(msg)
 
 
+class InstanceErrorState(OSBaseException):
+    def __init__(self, instance: Instance, msg: str):
+        super().__init__(f"The {instance} status is error. Message: {msg}")
+
+
 class ImageNotFound(OSBaseException):
     def __init__(self, id_):
         super().__init__(f"Image with id '{id_}' not found")

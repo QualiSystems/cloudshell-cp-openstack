@@ -1,13 +1,18 @@
-from novaclient.v2.servers import Server as NovaServer
+from __future__ import annotations
 
 from cloudshell.cp.core.cancellation_manager import CancellationContextManager
+from cloudshell.cp.core.rollback import RollbackCommand, RollbackCommandsManager
+from cloudshell.cp.core.utils.name_generator import NameGenerator
 
+from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp
-from cloudshell.cp.openstack.os_api.api import OSApi
-from cloudshell.cp.openstack.os_api.commands.rollback import (
-    RollbackCommand,
-    RollbackCommandsManager,
+from cloudshell.cp.openstack.os_api.models import Instance
+from cloudshell.cp.openstack.os_api.services.nova.nova_instance_service import (
+    _get_udev_rules,
 )
+from cloudshell.cp.openstack.resource_config import OSResourceConfig
+
+generate_name = NameGenerator()
 
 
 class CreateInstanceCommand(RollbackCommand):
@@ -15,21 +20,47 @@ class CreateInstanceCommand(RollbackCommand):
         self,
         rollback_manager: RollbackCommandsManager,
         cancellation_manager: CancellationContextManager,
-        os_api: OSApi,
+        os_api: OsApi,
         deploy_app: OSNovaImgDeployApp,
+        resource_conf: OSResourceConfig,
         *args,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(rollback_manager, cancellation_manager, *args, **kwargs)
         self._api = os_api
         self._deploy_app = deploy_app
+        self._resource_conf = resource_conf
         self._instance = None
 
-    def _execute(self, *args, **kwargs) -> NovaServer:
-        self._instance = self._api.create_instance(
-            self._deploy_app, self._cancellation_manager
+    def _execute(self, *args, **kwargs) -> Instance:
+        name = generate_name(self._deploy_app.app_name)
+        image = self._api.Image.get(self._deploy_app.image_id)
+        flavor = self._api.Flavor.find_first(self._deploy_app.instance_flavor)
+        mgmt_net = self._api.Network.get(self._resource_conf.os_mgmt_net_id)
+
+        instance = self._api.Instance.create(
+            name,
+            image,
+            flavor,
+            mgmt_net,
+            availability_zone=self._deploy_app.availability_zone,
+            affinity_group_id=self._deploy_app.affinity_group_id,
+            user_data=self._prepare_user_data(),
+            cancellation_manager=self._cancellation_manager,
         )
-        return self._instance
+        self._instance = instance
+        return instance
 
     def rollback(self):
-        self._api.terminate_instance(self._instance)
+        if isinstance(self._instance, Instance):
+            self._instance.remove()
+
+    def _prepare_user_data(self) -> str:
+        user_data = ""
+        if self._deploy_app.user_data:
+            user_data = self._deploy_app.user_data
+        if self._deploy_app.auto_udev:
+            if user_data:
+                user_data += "\n"
+            user_data += _get_udev_rules()
+        return user_data

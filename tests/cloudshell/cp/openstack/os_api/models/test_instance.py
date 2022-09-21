@@ -1,5 +1,8 @@
+from unittest.mock import Mock
+
 import pytest
 
+from cloudshell.cp.openstack.exceptions import InstanceErrorState
 from cloudshell.cp.openstack.os_api.models import Instance
 from cloudshell.cp.openstack.os_api.models.instance import InstanceStatus
 
@@ -7,6 +10,40 @@ from cloudshell.cp.openstack.os_api.models.instance import InstanceStatus
 @pytest.fixture
 def api_instance(os_api_v2, instance):
     return os_api_v2.Instance(instance)
+
+
+def test_create(os_api_v2, nova, glance):
+    name = "instance name"
+    image = Mock(name="image")
+    flavor = Mock(name="flavor")
+    network = Mock(name="network")
+
+    instance = os_api_v2.Instance.create(name, image, flavor, network)
+
+    nova.servers.create.assert_called_once_with(
+        name,
+        image.id,
+        flavor.id,
+        nics=[{"net-id": network.id}],
+        userdata=None,
+        availability_zone=None,
+        scheduler_hints=None,
+    )
+    instance._os_instance.delete.assert_not_called()
+
+
+def test_instance_started_with_error(os_api_v2, nova, nova_instance_factory):
+    name = "instance name"
+    image = Mock(name="image")
+    flavor = Mock(name="flavor")
+    network = Mock(name="network")
+    os_instance = nova_instance_factory("error")
+    nova.servers.create.return_value = os_instance
+
+    with pytest.raises(InstanceErrorState):
+        os_api_v2.Instance.create(name, image, flavor, network)
+
+    os_instance.delete.assert_called_once_with()
 
 
 def test_attach_network(simple_network, nova, api_instance: Instance):

@@ -12,9 +12,6 @@ from novaclient.v2.flavors import Flavor
 from novaclient.v2.images import Image
 from novaclient.v2.servers import Server as NovaServer
 
-from cloudshell.cp.core.cancellation_manager import CancellationContextManager
-
-from cloudshell.cp.openstack.models import OSNovaImgDeployApp
 from cloudshell.cp.openstack.models.deploy_app import SecurityGroupRule
 from cloudshell.cp.openstack.os_api.services import NeutronService, NovaService
 from cloudshell.cp.openstack.os_api.session import get_os_session
@@ -53,20 +50,6 @@ class OSApi:
 
     def _get_nova_service(self, instance: NovaServer) -> NovaService:
         return NovaService(instance, self._nova, self._logger)
-
-    def create_instance(
-        self,
-        deploy_app: OSNovaImgDeployApp,
-        cancellation_manager: CancellationContextManager,
-    ) -> NovaServer:
-        instance_service = NovaService.create_instance(
-            self._nova,
-            self._resource_conf,
-            deploy_app,
-            cancellation_manager,
-            self._logger,
-        )
-        return instance_service.instance
 
     def get_network_dict(self, **kwargs) -> dict:
         return self._neutron_service.get_network(**kwargs)
