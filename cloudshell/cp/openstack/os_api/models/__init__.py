@@ -4,6 +4,7 @@ from .image import Image
 from .instance import Instance, Interface
 from .network import Network, NetworkType
 from .port import Port
+from .security_group import SecurityGroup
 from .subnet import Subnet
 from .trunk import Trunk
 
@@ -18,4 +19,5 @@ __all__ = [
     "Image",
     "Flavor",
     "FloatingIp",
+    "SecurityGroup",
 ]

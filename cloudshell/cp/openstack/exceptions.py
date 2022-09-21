@@ -140,6 +140,11 @@ class FloatingIpNotFound(NetworkException):
         super().__init__(f"Floating IP with id '{id_}' not found")
 
 
+class SecurityGroupNotFound(NetworkException):
+    def __init__(self, *, id_: str | None = None):
+        super().__init__(f"Security Group with id '{id_}' not found")
+
+
 class NotSupportedConsoleType(OSBaseException):
     """Console type is not supported."""
 
