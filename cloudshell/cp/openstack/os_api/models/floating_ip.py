@@ -28,24 +28,24 @@ class FloatingIp:
         return f"Floating IP '{self.ip_address}'"
 
     @classmethod
-    def from_dict(cls, port_dict: dict) -> FloatingIp:
-        return cls(port_dict["id"], port_dict["floating_ip_address"])
+    def from_dict(cls, data_dict: dict) -> FloatingIp:
+        return cls(data_dict["id"], data_dict["floating_ip_address"])
 
     @classmethod
     def get(cls, id_: str) -> FloatingIp:
         cls._logger.debug(f"Getting a floating IP with ID '{id_}'")
         try:
             cls._neutron.show_floatingip(id_)
-            port_dict = cls._neutron.show_port(id_)["floatingip"]
+            data_dict = cls._neutron.show_port(id_)["floatingip"]
         except neutron_exc.NotFound:
             raise FloatingIpNotFound(id_=id_)
-        return cls.from_dict(port_dict)
+        return cls.from_dict(data_dict)
 
     @classmethod  # noqa: A003
     def all(cls) -> Generator[FloatingIp, None, None]:  # noqa: A003
         cls._logger.debug("Get all floating IPs")
-        for port_dict in cls._neutron.list_ports()["floatingips"]:
-            yield cls.from_dict(port_dict)
+        for data_dict in cls._neutron.list_ports()["floatingips"]:
+            yield cls.from_dict(data_dict)
 
     @classmethod
     def create(
@@ -59,10 +59,10 @@ class FloatingIp:
             "port_id": port.id,
         }
         cls._logger.debug(f"Creating a floating IP with data {floating_ip_data}")
-        full_floating_ip_dict = cls._neutron.create_floatingip(
+        full_data_dict = cls._neutron.create_floatingip(
             {"floatingip": floating_ip_data}
         )["floatingip"]
-        return cls.from_dict(full_floating_ip_dict)
+        return cls.from_dict(full_data_dict)
 
     def remove(self) -> None:
         self._logger.debug(f"Removing the {self}")
