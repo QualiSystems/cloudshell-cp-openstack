@@ -71,23 +71,6 @@ class NeutronService:
         ):
             pass
 
-    def create_floating_ip(self, subnet_id: str, port_id: str) -> str:
-        subnet_dict = self.get_subnet(id=subnet_id)
-        floating_ip_create_dict = {
-            "floatingip": {
-                "floating_network_id": subnet_dict["network_id"],
-                "subnet_id": subnet_id,
-                "port_id": port_id,
-            }
-        }
-        floating_ip_dict = self._neutron.create_floatingip(floating_ip_create_dict)
-        try:
-            ip = floating_ip_dict["floatingip"]["floating_ip_address"]
-        except KeyError:
-            emsg = f"Unable to assign Floating IP on Subnet {subnet_id}"
-            raise NetworkException(emsg)
-        return ip
-
     def delete_floating_ip(self, ip: str):
         floating_ips_dict = self._neutron.list_floatingips(floating_ip_address=ip)
         floating_ip_id = floating_ips_dict["floatingips"][0]["id"]

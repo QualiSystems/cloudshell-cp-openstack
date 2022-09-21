@@ -159,38 +159,6 @@ def test_generate_subnet_not_found_free():
         _get_first_free_subnet(blacklist_subnets)
 
 
-def test_create_floating_ip(neutron_service, neutron):
-    subnet_id = "subnet id"
-    port_id = "port id"
-    net_id = "net id"
-    neutron.list_subnets.return_value = {
-        "subnets": [{"id": subnet_id, "network_id": net_id}]
-    }
-
-    ip = neutron_service.create_floating_ip(subnet_id, port_id)
-
-    neutron.list_subnets.assert_called_once_with(id=subnet_id)
-    neutron.create_floatingip.assert_called_once_with(
-        {
-            "floatingip": {
-                "floating_network_id": net_id,
-                "subnet_id": subnet_id,
-                "port_id": port_id,
-            }
-        }
-    )
-    assert ip == neutron.create_floatingip()["floatingip"]["floating_ip_address"]
-
-
-def test_create_floating_ip_failed(neutron_service, neutron):
-    subnet_id = "subnet id"
-    port_id = "port id"
-    neutron.create_floatingip.return_value = {"floatingip": {}}
-
-    with pytest.raises(NetworkException, match="Unable to assign Floating IP"):
-        neutron_service.create_floating_ip(subnet_id, port_id)
-
-
 def test_floating_ip(neutron_service, neutron):
     ip = "ip"
     floating_id = "floating id"

@@ -60,9 +60,6 @@ class OSApi:
     def get_network_id_for_subnet_id(self, subnet_id: str) -> str:
         return self._neutron_service.get_subnet(id=subnet_id)["network_id"]
 
-    def create_floating_ip(self, subnet_id: str, port_id: str) -> str:
-        return self._neutron_service.create_floating_ip(subnet_id, port_id)
-
     def delete_floating_ip(self, ip: str):
         return self._neutron_service.delete_floating_ip(ip)
 
