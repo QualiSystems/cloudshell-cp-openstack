@@ -140,6 +140,14 @@ class FloatingIpNotFound(NetworkException):
         super().__init__(f"Floating IP with id '{id_}' not found")
 
 
+class CannotAddFloatingIp(NetworkException):
+    def __init__(self, instance: Instance):
+        super().__init__(
+            f"We're creating a floating IP on the interface with the management "
+            f"network but it missed on the {instance}"
+        )
+
+
 class SecurityGroupNotFound(NetworkException):
     def __init__(self, *, id_: str | None = None):
         super().__init__(f"Security Group with id '{id_}' not found")
