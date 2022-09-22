@@ -1,8 +1,4 @@
-from unittest.mock import Mock, call
-
-import pytest
-
-from cloudshell.cp.openstack.models.deploy_app import SecurityGroupRule
+from unittest.mock import call
 
 
 def test_get_network_dict(os_api, neutron):
@@ -91,51 +87,3 @@ def test_remove_network(os_api, neutron):
     neutron.list_subnets(network_id=net_id)
     neutron.delete_subnet.assert_has_calls([call("id1"), call("id2")])
     neutron.delete_network.assert_called_once_with(net_id)
-
-
-def test_create_security_group_for_instance(os_api, instance, neutron):
-    rules = [SecurityGroupRule.from_str("22-24")]
-
-    sg_id2 = os_api.create_security_group_for_instance(instance, rules)
-
-    neutron.create_security_group.assert_called_once_with(
-        {"security_group": {"name": f"sg-{instance.name}"}}
-    )
-    sg_id = neutron.create_security_group()["security_group"]["id"]
-    neutron.create_security_group_rule.assert_called_once_with(
-        {
-            "security_group_rule": {
-                "remote_ip_prefix": "0.0.0.0/0",
-                "port_range_min": 22,
-                "port_range_max": 24,
-                "protocol": "tcp",
-                "security_group_id": sg_id,
-                "direction": "ingress",
-            }
-        }
-    )
-    instance.add_security_group.assert_called_once_with(sg_id)
-    assert sg_id == sg_id2
-
-
-def test_create_security_group_for_instance_failed(os_api, instance, neutron):
-    rules = [SecurityGroupRule.from_str("22")]
-    neutron.create_security_group_rule.side_effect = ValueError(
-        "failed to create SG rule"
-    )
-
-    with pytest.raises(ValueError, match="failed to create SG rule"):
-        os_api.create_security_group_for_instance(instance, rules)
-
-
-def test_delete_security_group_for_instance(os_api, instance, neutron):
-    sg_id = "sg id"
-    sg = Mock(id=sg_id)
-    sg.name = f"sg-{instance.name}"
-    instance.list_security_group.return_value = [sg]
-
-    os_api.delete_security_group_for_instance(instance)
-
-    instance.list_security_group.assert_called_once_with()
-    instance.remove_security_group.assert_called_once_with(sg_id)
-    neutron.delete_security_group.assert_called_once_with(sg_id)
