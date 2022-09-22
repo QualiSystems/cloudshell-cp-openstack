@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from contextlib import nullcontext
+from contextlib import nullcontext, suppress
 from enum import Enum
 from logging import Logger
 from typing import TYPE_CHECKING, ClassVar, ContextManager, Generator
@@ -21,7 +21,13 @@ from cloudshell.cp.openstack.utils.cached_property import cached_property
 
 if TYPE_CHECKING:
     from cloudshell.cp.openstack.api.api import OsApi
-    from cloudshell.cp.openstack.os_api.models import Flavor, Image, Network, Port
+    from cloudshell.cp.openstack.os_api.models import (
+        Flavor,
+        Image,
+        Network,
+        Port,
+        SecurityGroup,
+    )
 
 
 class InstanceStatus(Enum):
@@ -212,6 +218,13 @@ class Instance:
             else:
                 time.sleep(1)
         raise PortIsNotAttached(port, self)
+
+    def add_security_group(self, security_group: SecurityGroup) -> None:
+        self._os_instance.add_security_group(security_group.id)
+
+    def remove_security_group(self, security_group: SecurityGroup) -> None:
+        with suppress(nova_exc.NotFound):
+            self._os_instance.remove_security_group(security_group.id)
 
     def _wait_for_status(
         self,
