@@ -53,6 +53,24 @@ class SecurityGroup:
         )["security_group"]
         return cls.from_dict(full_data)
 
+    def add_rule(
+        self,
+        cidr: str,
+        protocol: str,
+        port_range_min: int,
+        port_range_max: int,
+        direction: str,
+    ) -> None:
+        data = {
+            "remote_ip_prefix": cidr,
+            "port_range_min": port_range_min,
+            "port_range_max": port_range_max,
+            "protocol": protocol,
+            "security_group_id": self.id,
+            "direction": direction,
+        }
+        self._neutron.create_security_group_rule({"security_group_rule": data})
+
     def remove(self) -> None:
         self._logger.debug(f"Removing the {self}")
         with suppress(neutron_exc.NotFound):

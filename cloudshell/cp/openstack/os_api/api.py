@@ -12,7 +12,6 @@ from novaclient.v2.flavors import Flavor
 from novaclient.v2.images import Image
 from novaclient.v2.servers import Server as NovaServer
 
-from cloudshell.cp.openstack.models.deploy_app import SecurityGroupRule
 from cloudshell.cp.openstack.os_api.services import NeutronService, NovaService
 from cloudshell.cp.openstack.os_api.session import get_os_session
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
@@ -80,25 +79,6 @@ class OSApi:
 
     def remove_network(self, net_id: str):
         return self._neutron_service.remove_network(net_id)
-
-    def create_security_group_for_instance(
-        self, instance: NovaServer, rules: list[SecurityGroupRule]
-    ) -> str:
-        sg_id = self._neutron_service.create_security_group(f"sg-{instance.name}")
-        try:
-            for rule in rules:
-                self._neutron_service.create_security_group_rule(
-                    sg_id,
-                    rule.cidr,
-                    rule.port_range_min,
-                    rule.port_range_max,
-                    rule.protocol,
-                )
-            instance.add_security_group(sg_id)
-        except Exception:
-            self._neutron_service.delete_security_group(sg_id)
-            raise
-        return sg_id
 
     def delete_security_group_for_instance(self, instance: NovaServer):
         security_groups = instance.list_security_group()
