@@ -199,6 +199,12 @@ class Instance:
                 return iface
         return None
 
+    def find_interface_by_port_name(self, name: str) -> Interface | None:
+        for iface in self.interfaces:
+            if iface.port.name == name:
+                return iface
+        return None
+
     def find_floating_ip_by_mac(self, mac: str) -> str | None:
         return find_floating_ip(self._os_instance, mac)
 
