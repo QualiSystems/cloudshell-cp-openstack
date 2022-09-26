@@ -1,30 +1,27 @@
-import ipaddress
-from itertools import chain
-from typing import Generator, Optional
+from __future__ import annotations
+
+from typing import Generator
 
 from novaclient.v2.servers import Server as NovaServer
 
 
+def find_floating_ip(instance: NovaServer, mac: str) -> str | None:
+    return next(_get_ips_of_instance(instance, mac, "floating"), None)
+
+
+def find_fixed_ip(instance: NovaServer, mac: str) -> str | None:
+    return next(_get_ips_of_instance(instance, mac, "fixed"), None)
+
+
 def _get_ips_of_instance(
-    instance: NovaServer, type_: str, net_name: Optional[str] = None
+    instance: NovaServer, mac: str, type_: str, version: int = 4
 ) -> Generator[str, None, None]:
-    if net_name is not None:
-        addresses = instance.addresses.get(net_name, [])
-    else:
-        addresses = chain.from_iterable(instance.addresses.values())
-
-    for address_dict in addresses:
-        if address_dict["OS-EXT-IPS:type"] == type_:
-            yield address_dict["addr"]
-
-
-def get_floating_ip(instance: NovaServer) -> str:
-    return next(_get_ips_of_instance(instance, "floating"), "")
-
-
-def get_private_ip(instance: NovaServer, net_name: str) -> str:
-    ip = ""
-    for ip in _get_ips_of_instance(instance, "fixed", net_name):
-        if isinstance(ipaddress.ip_address(ip), ipaddress.IPv4Address):
-            break
-    return ip
+    instance.get()
+    for net_name, addr_dicts in instance.addresses.items():
+        for addr_dict in addr_dicts:
+            if (
+                addr_dict["OS-EXT-IPS-MAC:mac_addr"] == mac
+                and addr_dict["OS-EXT-IPS:type"] == type_
+                and addr_dict["version"] == version
+            ):
+                yield addr_dict["addr"]
