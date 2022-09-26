@@ -135,6 +135,18 @@ class Instance:
         return InstanceStatus(self._os_instance.status)
 
     @property
+    def image(self) -> Image:
+        return self.api.Image.get(self._os_instance.image["id"])
+
+    @property
+    def flavor(self) -> Flavor:
+        return self.api.Flavor.get(self._os_instance.flavor["id"])
+
+    @property
+    def available_zone(self) -> str:
+        return getattr(self._os_instance, "OS-EXT-AZ:availability_zone")
+
+    @property
     def interfaces(self) -> Generator[Interface, None, None]:
         self._logger.debug(f"Getting interfaces for the {self}")
         for iface in self._os_instance.interface_list():
