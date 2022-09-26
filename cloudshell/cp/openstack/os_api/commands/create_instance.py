@@ -49,6 +49,7 @@ class CreateInstanceCommand(RollbackCommand):
             cancellation_manager=self._cancellation_manager,
         )
         self._instance = instance
+        self._set_mgmt_iface_name(instance)
         return instance
 
     def rollback(self):
@@ -64,3 +65,9 @@ class CreateInstanceCommand(RollbackCommand):
                 user_data += "\n"
             user_data += _get_udev_rules()
         return user_data
+
+    def _set_mgmt_iface_name(self, inst: Instance) -> None:
+        ifaces = list(inst.interfaces)
+        assert len(ifaces) == 1
+        mgmt_iface = ifaces[0]
+        mgmt_iface.port.name = "mgmt-port"
