@@ -56,3 +56,17 @@ class Flavor:
     @property
     def name(self) -> str:
         return self._os_flavor.name
+
+    @property
+    def vcpus(self) -> int:
+        return self._os_flavor.vcpus
+
+    @property
+    def ram_mb(self) -> int:
+        # OpenStack returns RAM in MB
+        return self._os_flavor.ram
+
+    @property
+    def disk_gb(self) -> int:
+        # OpenStack returns disk in GB
+        return self._os_flavor.disk
