@@ -19,6 +19,11 @@ if TYPE_CHECKING:
     from cloudshell.cp.openstack.os_api.models import Trunk
 
 
+def _update_attribute(self: Port, attribute: attr.Attribute, new_value: str) -> str:
+    self._neutron.update_port(self.id, {"port": {attribute.name: new_value}})
+    return new_value
+
+
 @attr.s(auto_attribs=True, str=False)
 class Port:
     LOCK = Lock()
@@ -27,7 +32,7 @@ class Port:
     _logger: ClassVar[Logger]
 
     id: str  # noqa: A003
-    name: str
+    name: str = attr.ib(on_setattr=_update_attribute)  # type: ignore
     network_id: str
     mac_address: str
 
