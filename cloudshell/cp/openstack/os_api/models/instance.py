@@ -18,6 +18,10 @@ from cloudshell.cp.openstack.exceptions import (
     PortIsNotAttached,
 )
 from cloudshell.cp.openstack.utils.cached_property import cached_property
+from cloudshell.cp.openstack.utils.instance_helpers import (
+    find_fixed_ip,
+    find_floating_ip,
+)
 
 if TYPE_CHECKING:
     from cloudshell.cp.openstack.api.api import OsApi
@@ -195,6 +199,12 @@ class Instance:
                 return iface
         return None
 
+    def find_floating_ip_by_mac(self, mac: str) -> str | None:
+        return find_floating_ip(self._os_instance, mac)
+
+    def find_fixed_ip_by_mac(self, mac: str) -> str | None:
+        return find_fixed_ip(self._os_instance, mac)
+
     def power_on(self) -> None:
         if self.status is not InstanceStatus.ACTIVE:
             self._logger.debug(f"Starting the {self}")
@@ -274,3 +284,11 @@ class Interface:
     @cached_property
     def port(self) -> Port:
         return self.api.Port.get(self.port_id)
+
+    @property
+    def floating_ip(self) -> str | None:
+        return self.instance.find_floating_ip_by_mac(self.mac_address)
+
+    @property
+    def fixed_ip(self) -> str | None:
+        return self.instance.find_fixed_ip_by_mac(self.mac_address)
