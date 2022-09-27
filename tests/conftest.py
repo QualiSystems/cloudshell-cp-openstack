@@ -23,7 +23,6 @@ from cloudshell.shell.core.driver_context import (
 from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.constants import SHELL_NAME
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp, OSNovaImgDeployedApp
-from cloudshell.cp.openstack.os_api.api import OSApi
 from cloudshell.cp.openstack.os_api.commands.rollback import RollbackCommandsManager
 from cloudshell.cp.openstack.os_api.models import NetworkType
 from cloudshell.cp.openstack.os_api.models.instance import InstanceStatus
@@ -308,20 +307,6 @@ def neutron():
 @pytest.fixture()
 def glance():
     return MagicMock()
-
-
-@pytest.fixture()
-def os_api(resource_conf, logger, os_session, nova, neutron, monkeypatch):
-    api = OSApi(resource_conf, logger)
-    monkeypatch.setattr(api, "_os_session", os_session)
-    monkeypatch.setattr(api, "_nova", nova)
-    monkeypatch.setattr(api, "_neutron", neutron)
-    return api
-
-
-@pytest.fixture()
-def os_api_mock():
-    return create_autospec(OSApi)
 
 
 def get_deploy_app_request(
