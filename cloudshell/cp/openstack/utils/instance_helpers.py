@@ -4,6 +4,8 @@ from typing import Generator
 
 from novaclient.v2.servers import Server as NovaServer
 
+from cloudshell.cp.openstack.os_api.models import Instance, Interface
+
 
 def find_floating_ip(instance: NovaServer, mac: str) -> str | None:
     return next(_get_ips_of_instance(instance, mac, "floating"), None)
@@ -25,3 +27,13 @@ def _get_ips_of_instance(
                 and addr_dict["version"] == version
             ):
                 yield addr_dict["addr"]
+
+
+def get_mgmt_iface_name(inst: Instance) -> str:
+    return "mgmt-port"
+
+
+def get_mgmt_iface(inst: Instance) -> Interface | None:
+    port_name = get_mgmt_iface_name(inst)
+    iface = inst.find_interface_by_port_name(port_name)
+    return iface
