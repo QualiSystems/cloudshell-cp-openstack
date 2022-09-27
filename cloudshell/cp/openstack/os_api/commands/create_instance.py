@@ -11,6 +11,7 @@ from cloudshell.cp.openstack.os_api.services.nova.nova_instance_service import (
     _get_udev_rules,
 )
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
+from cloudshell.cp.openstack.utils.instance_helpers import get_mgmt_iface_name
 
 generate_name = NameGenerator()
 
@@ -66,8 +67,9 @@ class CreateInstanceCommand(RollbackCommand):
             user_data += _get_udev_rules()
         return user_data
 
-    def _set_mgmt_iface_name(self, inst: Instance) -> None:
+    @staticmethod
+    def _set_mgmt_iface_name(inst: Instance) -> None:
         ifaces = list(inst.interfaces)
         assert len(ifaces) == 1
         mgmt_iface = ifaces[0]
-        mgmt_iface.port.name = "mgmt-port"
+        mgmt_iface.port.name = get_mgmt_iface_name(inst)
