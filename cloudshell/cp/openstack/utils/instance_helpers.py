@@ -4,7 +4,7 @@ from typing import Generator
 
 from novaclient.v2.servers import Server as NovaServer
 
-from cloudshell.cp.openstack.os_api.models import Instance, Interface
+from cloudshell.cp.openstack.os_api.models import Instance, Interface, SecurityGroup
 
 
 def find_floating_ip(instance: NovaServer, mac: str) -> str | None:
@@ -37,3 +37,13 @@ def get_mgmt_iface(inst: Instance) -> Interface | None:
     port_name = get_mgmt_iface_name(inst)
     iface = inst.find_interface_by_port_name(port_name)
     return iface
+
+
+def get_instance_security_group_name(inst: Instance) -> str:
+    return f"sg-{inst.name}"
+
+
+def get_instance_security_group(inst: Instance) -> SecurityGroup | None:
+    name = get_instance_security_group_name(inst)
+    sg = inst.find_security_group(name)
+    return sg
