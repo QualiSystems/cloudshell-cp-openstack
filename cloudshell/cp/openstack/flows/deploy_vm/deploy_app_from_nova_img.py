@@ -1,19 +1,17 @@
 from logging import Logger
 
-from novaclient.v2.servers import Server as NovaServer
-
 from cloudshell.cp.core.cancellation_manager import CancellationContextManager
 from cloudshell.cp.core.flows import AbstractDeployFlow
 from cloudshell.cp.core.request_actions import DeployVMRequestActions
 from cloudshell.cp.core.request_actions.models import Attribute, DeployAppResult
 
+from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.models.deploy_app import OSNovaImgDeployApp
 from cloudshell.cp.openstack.os_api import commands
-from cloudshell.cp.openstack.os_api.api import OSApi
 from cloudshell.cp.openstack.os_api.commands.rollback import RollbackCommandsManager
+from cloudshell.cp.openstack.os_api.models import Instance, Interface
 from cloudshell.cp.openstack.os_api.services import vm_details_provider
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
-from cloudshell.cp.openstack.utils.instance_helpers import get_private_ip
 
 
 class DeployAppFromNovaImgFlow(AbstractDeployFlow):
@@ -21,7 +19,7 @@ class DeployAppFromNovaImgFlow(AbstractDeployFlow):
         self,
         resource_conf: OSResourceConfig,
         cancellation_manager: CancellationContextManager,
-        os_api: OSApi,
+        os_api: OsApi,
         logger: Logger,
     ):
         super().__init__(logger)
@@ -36,26 +34,23 @@ class DeployAppFromNovaImgFlow(AbstractDeployFlow):
         try:
             with self._rollback_manager:
                 instance = self._start_instance(deploy_app)
+                mgmt_iface = next(instance.interfaces)  # we have one iface on deploy
                 if deploy_app.add_floating_ip:
-                    floating_ip = self._create_floating_ip(deploy_app, instance)
+                    floating_ip = self._create_floating_ip(deploy_app, mgmt_iface)
                 else:
                     floating_ip = ""
                 if deploy_app.inbound_ports:
                     self._add_security_group(deploy_app, instance)
 
-                net_name = self._api.get_network_name(
-                    self._resource_conf.os_mgmt_net_id
-                )
-                private_ip = get_private_ip(instance, net_name)
                 vm_details_data = vm_details_provider.create(
-                    instance, self._api, self._resource_conf.os_mgmt_net_id
+                    instance, self._resource_conf.os_mgmt_net_id
                 )
                 result = DeployAppResult(
                     actionId=deploy_app.actionId,
                     success=True,
                     vmUuid=instance.id,
                     vmName=instance.name,
-                    deployedAppAddress=private_ip,
+                    deployedAppAddress=mgmt_iface.fixed_ip,
                     deployedAppAttributes=[Attribute("Public IP", floating_ip)],
                     vmDetailsData=vm_details_data,
                 )
@@ -66,13 +61,17 @@ class DeployAppFromNovaImgFlow(AbstractDeployFlow):
             )
         return result
 
-    def _start_instance(self, deploy_app: OSNovaImgDeployApp) -> NovaServer:
+    def _start_instance(self, deploy_app: OSNovaImgDeployApp) -> Instance:
         return commands.CreateInstanceCommand(
-            self._rollback_manager, self._cancellation_manager, self._api, deploy_app
+            self._rollback_manager,
+            self._cancellation_manager,
+            self._api,
+            deploy_app,
+            self._resource_conf,
         ).execute()
 
     def _create_floating_ip(
-        self, deploy_app: OSNovaImgDeployApp, instance: NovaServer
+        self, deploy_app: OSNovaImgDeployApp, iface: Interface
     ) -> str:
         return commands.CreateFloatingIP(
             self._rollback_manager,
@@ -80,10 +79,10 @@ class DeployAppFromNovaImgFlow(AbstractDeployFlow):
             self._api,
             self._resource_conf,
             deploy_app,
-            instance,
+            iface,
         ).execute()
 
-    def _add_security_group(self, deploy_app: OSNovaImgDeployApp, instance: NovaServer):
+    def _add_security_group(self, deploy_app: OSNovaImgDeployApp, instance: Instance):
         return commands.CreateSecurityGroup(
             self._rollback_manager,
             self._cancellation_manager,
