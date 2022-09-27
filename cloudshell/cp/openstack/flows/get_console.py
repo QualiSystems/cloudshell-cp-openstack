@@ -1,6 +1,6 @@
+from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.exceptions import NotSupportedConsoleType
 from cloudshell.cp.openstack.models import OSNovaImgDeployedApp
-from cloudshell.cp.openstack.os_api.api import OSApi
 
 CONSOLE_TYPES = {
     "Instance Console": "novnc",  # http://url
@@ -14,9 +14,8 @@ def validate_console_type(console_type: str):
 
 
 def get_console(
-    api: OSApi, deployed_app: OSNovaImgDeployedApp, console_type: str
+    api: OsApi, deployed_app: OSNovaImgDeployedApp, console_type: str
 ) -> str:
-    inst = api.get_instance(deployed_app.vmdetails.uid)
+    inst = api.Instance.get(deployed_app.vmdetails.uid)
     os_console_type = CONSOLE_TYPES[console_type]
-    resp = inst.get_console_url(os_console_type)
-    return resp["console"]["url"]
+    return inst.get_console_url(os_console_type)
