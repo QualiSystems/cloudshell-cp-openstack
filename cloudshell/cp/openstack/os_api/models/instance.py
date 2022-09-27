@@ -156,6 +156,12 @@ class Instance:
         for iface in self._os_instance.interface_list():
             yield self.api.Interface.from_os_interface(self, iface)
 
+    @property
+    def security_groups(self) -> Generator[SecurityGroup, None, None]:
+        self._logger.debug(f"Getting security groups for the {self}")
+        for sg in self._os_instance.list_security_group():
+            yield self.api.SecurityGroup.from_dict(sg.to_dict())
+
     def attach_port(self, port: Port) -> Interface:
         self._logger.debug(f"Attaching the {port} to the {self}")
         for iface in self.interfaces:
@@ -247,12 +253,21 @@ class Instance:
                 time.sleep(1)
         raise PortIsNotAttached(port, self)
 
+    def find_security_group(self, name: str) -> SecurityGroup | None:
+        for sg in self.security_groups:
+            if sg.name == name:
+                return sg
+        return None
+
     def add_security_group(self, security_group: SecurityGroup) -> None:
         self._os_instance.add_security_group(security_group.id)
 
     def remove_security_group(self, security_group: SecurityGroup) -> None:
         with suppress(nova_exc.NotFound):
             self._os_instance.remove_security_group(security_group.id)
+
+    def get_console_url(self, type_: str) -> str:
+        return self._os_instance.get_console_url(type_)["console"]["url"]
 
     def _wait_for_status(
         self,
