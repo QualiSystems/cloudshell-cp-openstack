@@ -136,16 +136,13 @@ class SubnetNotFound(NetworkException):
 
 
 class FloatingIpNotFound(NetworkException):
-    def __init__(self, *, id_: str | None = None):
-        super().__init__(f"Floating IP with id '{id_}' not found")
-
-
-class CannotAddFloatingIp(NetworkException):
-    def __init__(self, instance: Instance):
-        super().__init__(
-            f"We're creating a floating IP on the interface with the management "
-            f"network but it missed on the {instance}"
-        )
+    def __init__(self, *, id_: str | None = None, ip: str | None = None):
+        assert id_ or ip
+        if id_:
+            msg = f"Floating IP with id '{id_}' not found"
+        else:
+            msg = f"Floating IP '{ip}' not found"
+        super().__init__(msg)
 
 
 class SecurityGroupNotFound(NetworkException):
