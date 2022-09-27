@@ -4,6 +4,7 @@ from typing import Generator
 
 from novaclient.v2.servers import Server as NovaServer
 
+from cloudshell.cp.openstack.exceptions import MgmtIfaceIsMissed
 from cloudshell.cp.openstack.os_api.models import Instance, Interface, SecurityGroup
 
 
@@ -33,9 +34,11 @@ def get_mgmt_iface_name(inst: Instance) -> str:
     return "mgmt-port"
 
 
-def get_mgmt_iface(inst: Instance) -> Interface | None:
+def get_mgmt_iface(inst: Instance) -> Interface:
     port_name = get_mgmt_iface_name(inst)
     iface = inst.find_interface_by_port_name(port_name)
+    if not iface:
+        raise MgmtIfaceIsMissed(inst)
     return iface
 
 

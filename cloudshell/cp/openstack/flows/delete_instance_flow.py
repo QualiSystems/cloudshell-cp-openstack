@@ -19,12 +19,11 @@ def delete_instance(api: OsApi, deployed_app: OSNovaImgDeployedApp):
 
 def _remove_floating_ip(inst: Instance):
     mgmt_iface = get_mgmt_iface(inst)
-    if mgmt_iface:
-        ip_address = mgmt_iface.floating_ip
-        if ip_address:
-            with suppress(FloatingIpNotFound):
-                ip = inst.api.FloatingIp.find_by_ip(ip_address)
-                ip.remove()
+    ip_address = mgmt_iface.floating_ip
+    if ip_address:
+        with suppress(FloatingIpNotFound):
+            ip = inst.api.FloatingIp.find_by_ip(ip_address)
+            ip.remove()
 
 
 def _remove_security_group(inst: Instance):
