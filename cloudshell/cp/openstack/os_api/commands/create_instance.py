@@ -7,11 +7,9 @@ from cloudshell.cp.core.utils.name_generator import NameGenerator
 from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp
 from cloudshell.cp.openstack.os_api.models import Instance
-from cloudshell.cp.openstack.os_api.services.nova.nova_instance_service import (
-    _get_udev_rules,
-)
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 from cloudshell.cp.openstack.utils.instance_helpers import get_mgmt_iface_name
+from cloudshell.cp.openstack.utils.udev import get_udev_rules
 
 generate_name = NameGenerator()
 
@@ -64,7 +62,7 @@ class CreateInstanceCommand(RollbackCommand):
         if self._deploy_app.auto_udev:
             if user_data:
                 user_data += "\n"
-            user_data += _get_udev_rules()
+            user_data += get_udev_rules()
         return user_data
 
     @staticmethod

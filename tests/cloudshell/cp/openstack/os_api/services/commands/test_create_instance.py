@@ -5,9 +5,7 @@ import pytest
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp
 from cloudshell.cp.openstack.os_api.commands import CreateInstanceCommand
 from cloudshell.cp.openstack.os_api.models import Instance
-from cloudshell.cp.openstack.os_api.services.nova.nova_instance_service import (
-    _get_udev_rules,
-)
+from cloudshell.cp.openstack.utils.udev import get_udev_rules
 
 
 @pytest.fixture()
@@ -56,7 +54,7 @@ def test_create_instance(
         deploy_app.image_id,
         flavor_id,
         nics=[{"net-id": resource_conf.os_mgmt_net_id}],
-        userdata=_get_udev_rules(),
+        userdata=get_udev_rules(),
         availability_zone=availability_zone,
         scheduler_hints={"group": affinity_group_id},
     )
