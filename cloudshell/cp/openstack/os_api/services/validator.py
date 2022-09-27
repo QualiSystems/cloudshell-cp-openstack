@@ -1,23 +1,25 @@
+from __future__ import annotations
+
 import ipaddress
 import random
-from typing import TYPE_CHECKING, Iterable, List
+from typing import TYPE_CHECKING, Iterable
 
 import keystoneauth1.exceptions
-from neutronclient.client import exceptions as neutron_exceptions
 
+from cloudshell.cp.openstack.os_api.models import NetworkType
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
 if TYPE_CHECKING:
-    from cloudshell.cp.openstack.os_api.api import OSApi
+    from cloudshell.cp.openstack.api.api import OsApi
 
 
-def validate_conf_and_connection(api: "OSApi", resource_conf: OSResourceConfig):
+def validate_conf_and_connection(api: OsApi, resource_conf: OSResourceConfig) -> None:
     _validate_resource_conf(resource_conf)
     _validate_connection(api, resource_conf)
     _validate_network_attributes(api, resource_conf)
 
 
-def _validate_resource_conf(resource_conf: OSResourceConfig):
+def _validate_resource_conf(resource_conf: OSResourceConfig) -> None:
     _is_not_empty(resource_conf.controller_url, resource_conf.ATTR_NAMES.controller_url)
     _is_http_url(resource_conf.controller_url, resource_conf.ATTR_NAMES.controller_url)
 
@@ -37,25 +39,25 @@ def _validate_resource_conf(resource_conf: OSResourceConfig):
     )
 
 
-def _is_not_empty(value: str, attr_name: str):
+def _is_not_empty(value: str, attr_name: str) -> None:
     if not value:
         raise ValueError(f"{attr_name} cannot be empty")
 
 
-def _is_http_url(value: str, attr_name: str):
+def _is_http_url(value: str, attr_name: str) -> None:
     v = value.lower()
     if not v.startswith("http://") and not v.startswith("https://"):
         raise ValueError(f"{value} is not valid format for {attr_name}")
 
 
-def _is_one_of_the(value: str, expected_vals: Iterable[str], attr_name: str):
+def _is_one_of_the(value: str, expected_vals: Iterable[str], attr_name: str) -> None:
     if value.lower() not in map(str.lower, expected_vals):
         raise ValueError(f"{attr_name} should be one of {expected_vals}")
 
 
-def _validate_connection(api: "OSApi", resource_conf: OSResourceConfig):
+def _validate_connection(api: OsApi, resource_conf: OSResourceConfig) -> None:
     try:
-        api._nova.servers.list()
+        list(api.Instance.all())
     except (
         keystoneauth1.exceptions.http.BadRequest,
         keystoneauth1.exceptions.http.Unauthorized,
@@ -67,7 +69,7 @@ def _validate_connection(api: "OSApi", resource_conf: OSResourceConfig):
         raise ValueError(f"One or more values are not correct. {e}") from e
 
 
-def _validate_network_attributes(api: "OSApi", resource_conf: OSResourceConfig):
+def _validate_network_attributes(api: OsApi, resource_conf: OSResourceConfig) -> None:
     _get_network_dict(api, resource_conf.os_mgmt_net_id)
     _validate_floating_ip_subnet(api, resource_conf.floating_ip_subnet_id)
     _validate_vlan_type(
@@ -76,46 +78,40 @@ def _validate_network_attributes(api: "OSApi", resource_conf: OSResourceConfig):
     _validate_reserved_networks(resource_conf.os_reserved_networks)
 
 
-def _get_network_dict(api: "OSApi", network_id: str):
-    try:
-        val = api.get_network_dict(id=network_id)
-    except Exception as e:
-        raise ValueError(f"Error getting network. {e}") from e
-    return val
+def _get_network_dict(api: OsApi, network_id: str) -> None:
+    api.Network.get(network_id)
 
 
-def _validate_floating_ip_subnet(api: "OSApi", floating_ip_subnet_id: str):
-    net_id = api.get_network_id_for_subnet_id(floating_ip_subnet_id)
-    ext_net = _get_network_dict(api, net_id)
-    if not ext_net["router:external"]:
-        msg = f"Network with ID {net_id} exists but is not an external network"
+def _validate_floating_ip_subnet(api: OsApi, floating_ip_subnet_id: str) -> None:
+    subnet = api.Subnet.get(floating_ip_subnet_id)
+    network = subnet.network
+    if not network.is_external:
+        msg = f"The {network} is not an external network"
         raise ValueError(msg)
 
 
-def _validate_vlan_type(api: "OSApi", vlan_type: str, os_physical_int: str):
-    e_msg = ""
-    for retry in range(1, 11):
-        data = {
-            "provider:network_type": vlan_type.lower(),
-            "name": "qs_autoload_validation_net",
-            "provider:segmentation_id": random.randint(100, 4000),
-            "admin_state_up": True,
-        }
-        if vlan_type.lower() == "vlan":
-            data["provider:physical_network"] = os_physical_int
-        try:
-            new_net = api.create_network({"network": data})
-            api.remove_network(new_net["network"]["id"])
-            break
-        except neutron_exceptions.Conflict as e:
-            e_msg = f"Error occurred during creating network after {retry} retries. {e}"
-        except Exception as e:
-            raise ValueError(f"Error occurred during creating network. {e}") from e
-    else:
-        raise ValueError(e_msg)
+def _validate_vlan_type(api: OsApi, vlan_type: str, os_physical_int: str) -> None:
+    vlan_id = _get_free_vlan_id(api)
+    net = api.Network.create(
+        "qs_autoload_validation_net",
+        network_type=NetworkType(vlan_type),
+        vlan_id=vlan_id,
+        physical_iface_name=os_physical_int,
+    )
+    net.remove()
 
 
-def _validate_reserved_networks(reserved_networks: List[str]):
+def _get_free_vlan_id(api: OsApi) -> int:
+    used_vlans = {net.vlan_id for net in api.Network.all() if net.vlan_id}
+
+    vlan_id = random.randint(100, 4000)
+    while vlan_id in used_vlans:
+        vlan_id = random.randint(100, 4000)
+
+    return vlan_id
+
+
+def _validate_reserved_networks(reserved_networks: list[str]):
     for net in reserved_networks:
         # Just try to create an IPv4Network if anything, it'd raise a ValueError
         ipaddress.ip_network(net)
