@@ -47,6 +47,11 @@ class InstanceErrorState(OSBaseException):
         super().__init__(f"The {instance} status is error. Message: {msg}")
 
 
+class MgmtIfaceIsMissed(OSBaseException):
+    def __init__(self, instance: Instance):
+        super().__init__(f"Cannot find management interface on the {instance}")
+
+
 class ImageNotFound(OSBaseException):
     def __init__(self, id_):
         super().__init__(f"Image with id '{id_}' not found")
