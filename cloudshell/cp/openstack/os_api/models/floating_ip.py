@@ -40,6 +40,17 @@ class FloatingIp:
             raise FloatingIpNotFound(id_=id_)
         return cls.from_dict(data_dict)
 
+    @classmethod
+    def find_by_ip(cls, ip: str) -> FloatingIp:
+        cls._logger.debug(f"Finding a floating IP with IP '{ip}'")
+        try:
+            data_dict = cls._neutron.list_floatingips(floating_ip_address=ip)[
+                "floatingips"
+            ][0]
+        except IndexError:
+            raise FloatingIpNotFound(ip=ip)
+        return cls.from_dict(data_dict)
+
     @classmethod  # noqa: A003
     def all(cls) -> Generator[FloatingIp, None, None]:  # noqa: A003
         cls._logger.debug("Get all floating IPs")
