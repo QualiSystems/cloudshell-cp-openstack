@@ -57,7 +57,7 @@ class QVlanNetwork:
 
     @cached_property
     def _vlan_type(self) -> NetworkType:
-        return NetworkType.from_str(self._resource_conf.vlan_type)
+        return NetworkType(self._resource_conf.vlan_type)
 
     @staticmethod
     def _get_network_name(vlan_id: int) -> str:
