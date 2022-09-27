@@ -3,13 +3,12 @@ from __future__ import annotations
 from cloudshell.cp.core.cancellation_manager import CancellationContextManager
 
 from cloudshell.cp.openstack.api.api import OsApi
-from cloudshell.cp.openstack.exceptions import CannotAddFloatingIp
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp
 from cloudshell.cp.openstack.os_api.commands.rollback import (
     RollbackCommand,
     RollbackCommandsManager,
 )
-from cloudshell.cp.openstack.os_api.models import FloatingIp, Instance
+from cloudshell.cp.openstack.os_api.models import FloatingIp, Interface
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
 
@@ -21,7 +20,7 @@ class CreateFloatingIP(RollbackCommand):
         os_api: OsApi,
         resource_conf: OSResourceConfig,
         deploy_app: OSNovaImgDeployApp,
-        instance: Instance,
+        iface: Interface,
         *args,
         **kwargs,
     ):
@@ -29,7 +28,7 @@ class CreateFloatingIP(RollbackCommand):
         self._api = os_api
         self._resource_conf = resource_conf
         self._deploy_app = deploy_app
-        self._instance = instance
+        self._iface = iface
         self._ip: FloatingIp | None = None
 
     def _execute(self, *args, **kwargs) -> str:
@@ -39,12 +38,7 @@ class CreateFloatingIP(RollbackCommand):
             subnet_id = self._resource_conf.floating_ip_subnet_id
         floating_subnet = self._api.Subnet.get(subnet_id)
 
-        mgmt_net = self._api.Network.get(self._resource_conf.os_mgmt_net_id)
-        mgmt_iface = self._instance.find_interface_by_network(mgmt_net)
-        if not mgmt_iface:
-            raise CannotAddFloatingIp(self._instance)
-
-        ip = self._api.FloatingIp.create(floating_subnet, mgmt_iface.port)
+        ip = self._api.FloatingIp.create(floating_subnet, self._iface.port)
         self._ip = ip
         return ip.ip_address
 
