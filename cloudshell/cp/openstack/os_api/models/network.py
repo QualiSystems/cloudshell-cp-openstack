@@ -24,8 +24,9 @@ class NetworkType(Enum):
     GENEVE = "geneve"
 
     @classmethod
-    def from_str(cls, value: str) -> NetworkType:
-        return NetworkType(value.lower())
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            return cls(value.lower())
 
 
 @attr.s(auto_attribs=True, str=False)
@@ -38,6 +39,7 @@ class Network:
     name: str
     network_type: NetworkType
     vlan_id: int | None
+    is_external: bool
 
     def __str__(self) -> str:
         return f"Network '{self.name}'"
@@ -49,6 +51,7 @@ class Network:
             net_dict["name"],
             network_type=NetworkType(net_dict["provider:network_type"]),
             vlan_id=net_dict["provider:segmentation_id"],
+            is_external=net_dict["router:external"],
         )
 
     @classmethod
