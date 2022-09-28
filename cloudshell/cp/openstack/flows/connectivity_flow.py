@@ -49,7 +49,7 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         instance = self._api.Instance.get(vm_uuid)
         self._logger.info(f"Start adding VLAN {vlan_id} to the {instance}")
 
-        if network_id_or_name and network_id_or_name != str(vlan_id):
+        if network_id_or_name:
             # if network name or id is set, we use it without additional checks
             vlan_network = self._get_existed_network(network_id_or_name)
         else:
@@ -82,9 +82,6 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         port_mode = action.connection_params.mode
         mac_address = action.connector_attrs.interface
         network_id_or_name = action.connection_params.vlan_service_attrs.virtual_network
-        network_id_or_name = (
-            network_id_or_name if network_id_or_name != str(vlan_id) else None
-        )
 
         instance = self._api.Instance.get(vm_uuid)
         self._logger.info(f"Start removing VLAN {vlan_id} from the {instance}")
