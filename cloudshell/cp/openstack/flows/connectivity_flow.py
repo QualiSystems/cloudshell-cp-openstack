@@ -38,6 +38,7 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         self._q_trunk = QTrunk(self._api, resource_conf, logger)
 
     def _set_vlan(self, action: OsConnectivityActionModel) -> ConnectivityActionResult:
+        action_id = action.action_id
         vlan_id = int(action.connection_params.vlan_service_attrs.vlan_id)
         vm_uuid = action.custom_action_attrs.vm_uuid
         qnq = action.connection_params.vlan_service_attrs.qnq
@@ -58,7 +59,7 @@ class ConnectivityFlow(AbstractConnectivityFlow):
 
         try:
             if port_mode is ConnectionModeEnum.TRUNK:
-                iface = self._q_trunk.connect_trunk(instance, vlan_network)
+                iface = self._q_trunk.connect_trunk(instance, vlan_network, action_id)
             else:
                 try:
                     iface = instance.attach_network(vlan_network)
@@ -75,6 +76,7 @@ class ConnectivityFlow(AbstractConnectivityFlow):
         )
 
     def _remove_vlan(self, action: ConnectivityActionModel) -> ConnectivityActionResult:
+        action_id = action.action_id
         vlan_id = int(action.connection_params.vlan_service_attrs.vlan_id)
         vm_uuid = action.custom_action_attrs.vm_uuid
         port_mode = action.connection_params.mode
@@ -95,7 +97,7 @@ class ConnectivityFlow(AbstractConnectivityFlow):
             self._logger.debug(f"VLAN {vlan_id} already removed")
         else:
             if port_mode is ConnectionModeEnum.TRUNK:
-                self._q_trunk.remove_trunk(instance, vlan_network)
+                self._q_trunk.remove_trunk(instance, vlan_network, action_id)
             else:
                 instance.detach_network(vlan_network)
 
