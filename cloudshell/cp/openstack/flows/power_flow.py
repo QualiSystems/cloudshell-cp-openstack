@@ -2,8 +2,8 @@ from logging import Logger
 
 import attr
 
-from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.models import OSNovaImgDeployedApp
+from cloudshell.cp.openstack.os_api.api import OsApi
 
 
 @attr.s(auto_attribs=True, slots=True)

@@ -14,9 +14,9 @@ from cloudshell.shell.flows.connectivity.parse_request_service import (
     AbstractParseConnectivityService,
 )
 
-from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.exceptions import NetworkNotFound
 from cloudshell.cp.openstack.models.connectivity_models import OsConnectivityActionModel
+from cloudshell.cp.openstack.os_api.api import OsApi
 from cloudshell.cp.openstack.os_api.models import Network
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 from cloudshell.cp.openstack.services.network_service import QVlanNetwork

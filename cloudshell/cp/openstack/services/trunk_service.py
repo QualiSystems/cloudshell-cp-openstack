@@ -7,8 +7,8 @@ from typing import ClassVar
 
 import attr
 
-from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.exceptions import PortNotFound, TrunkNotFound
+from cloudshell.cp.openstack.os_api.api import OsApi
 from cloudshell.cp.openstack.os_api.models import Instance, Interface, Network
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
