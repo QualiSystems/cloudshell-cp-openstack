@@ -5,9 +5,9 @@ from cloudshell.cp.core.flows import AbstractDeployFlow
 from cloudshell.cp.core.request_actions import DeployVMRequestActions
 from cloudshell.cp.core.request_actions.models import Attribute, DeployAppResult
 
-from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.models.deploy_app import OSNovaImgDeployApp
 from cloudshell.cp.openstack.os_api import commands
+from cloudshell.cp.openstack.os_api.api import OsApi
 from cloudshell.cp.openstack.os_api.commands.rollback import RollbackCommandsManager
 from cloudshell.cp.openstack.os_api.models import Instance, Interface
 from cloudshell.cp.openstack.os_api.services import vm_details_provider

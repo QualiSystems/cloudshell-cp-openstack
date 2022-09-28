@@ -7,12 +7,12 @@ from threading import Lock
 import attr
 from neutronclient.common import exceptions as neutron_exc
 
-from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.exceptions import (
     FreeSubnetIsNotFound,
     NetworkWithVlanIsNotCreatedByCloudShell,
 )
 from cloudshell.cp.openstack.models.connectivity_models import SubnetCidrData
+from cloudshell.cp.openstack.os_api.api import OsApi
 from cloudshell.cp.openstack.os_api.models import Network, NetworkType
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 from cloudshell.cp.openstack.utils.cached_property import cached_property
