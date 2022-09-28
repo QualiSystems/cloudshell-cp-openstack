@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from cloudshell.cp.core.cancellation_manager import CancellationContextManager
 
-from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp
+from cloudshell.cp.openstack.os_api.api import OsApi
 from cloudshell.cp.openstack.os_api.commands.rollback import (
     RollbackCommand,
     RollbackCommandsManager,

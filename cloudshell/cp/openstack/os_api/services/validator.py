@@ -10,7 +10,7 @@ from cloudshell.cp.openstack.os_api.models import NetworkType
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 
 if TYPE_CHECKING:
-    from cloudshell.cp.openstack.api.api import OsApi
+    from cloudshell.cp.openstack.os_api.api import OsApi
 
 
 def validate_conf_and_connection(api: OsApi, resource_conf: OSResourceConfig) -> None:

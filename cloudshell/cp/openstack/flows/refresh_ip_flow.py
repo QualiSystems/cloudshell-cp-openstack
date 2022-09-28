@@ -1,5 +1,5 @@
-from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.models import OSNovaImgDeployedApp
+from cloudshell.cp.openstack.os_api.api import OsApi
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 from cloudshell.cp.openstack.utils.instance_helpers import get_mgmt_iface
 
