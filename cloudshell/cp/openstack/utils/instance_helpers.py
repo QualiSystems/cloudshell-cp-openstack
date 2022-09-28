@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Generator
+from typing import TYPE_CHECKING, Generator
 
 from novaclient.v2.servers import Server as NovaServer
 
 from cloudshell.cp.openstack.exceptions import MgmtIfaceIsMissed
-from cloudshell.cp.openstack.os_api.models import Instance, Interface, SecurityGroup
+
+if TYPE_CHECKING:
+    from cloudshell.cp.openstack.os_api.models import Instance, Interface, SecurityGroup
 
 
 def find_floating_ip(instance: NovaServer, mac: str) -> str | None:

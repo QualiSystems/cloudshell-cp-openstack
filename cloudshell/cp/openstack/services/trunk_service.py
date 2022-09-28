@@ -26,34 +26,50 @@ class QTrunk:
 
     @staticmethod
     def _get_name_prefix(instance: Instance) -> str:
-        return instance.name[:60]
+        return instance.name[:16]
 
-    def _get_trunk_port_name(self, instance: Instance) -> str:
-        return f"{self._get_name_prefix(instance)}-trunk-port"
+    @staticmethod
+    def _get_trunk_suffix(action_id: str) -> str:
+        i = action_id.index("_")
+        first_part = action_id[:i].rsplit("-", 1)[-1]
+        second_part = action_id[i + 1 :].split("-", 1)[0]
+        suffix = f"{first_part}_{second_part}"
+        return suffix
 
-    def _get_trunk_name(self, instance: Instance) -> str:
-        return f"{self._get_name_prefix(instance)}-trunk"
+    @staticmethod
+    def _get_trunk_port_name(prefix: str, suffix: str) -> str:
+        return f"{prefix}-trunk-port-{suffix}"
 
-    def _get_sub_port_name(self, instance: Instance, vlan_network: Network) -> str:
-        prefix = self._get_name_prefix(instance)
-        return f"{prefix}-sub-port-{vlan_network.vlan_id}"
+    @staticmethod
+    def _get_trunk_name(prefix: str, suffix: str) -> str:
+        return f"{prefix}-trunk-{suffix}"
 
-    def connect_trunk(self, instance: Instance, vlan_network: Network) -> Interface:
+    @staticmethod
+    def _get_sub_port_name(prefix: str, vlan_network: Network, suffix: str) -> str:
+        return f"{prefix}-sub-port-{vlan_network.vlan_id}-{suffix}"
+
+    def connect_trunk(
+        self, instance: Instance, vlan_network: Network, action_id: str
+    ) -> Interface:
         try:
-            iface = self._connect_trunk(instance, vlan_network)
+            iface = self._connect_trunk(instance, vlan_network, action_id)
         except Exception:
             self._logger.exception("Failed to create a trunk")
-            self.remove_trunk(instance, vlan_network)
+            self.remove_trunk(instance, vlan_network, action_id)
             raise
         return iface
 
-    def _connect_trunk(self, instance: Instance, vlan_network: Network) -> Interface:
+    def _connect_trunk(
+        self, instance: Instance, vlan_network: Network, action_id: str
+    ) -> Interface:
         self._logger.info(f"Creating a trunk for the {instance} with {vlan_network}")
-        trunk_network = self._api.Network.get(self._trunk_network_id)
-        trunk_port_name = self._get_trunk_port_name(instance)
-        trunk_name = self._get_trunk_name(instance)
-        sub_port_name = self._get_sub_port_name(instance, vlan_network)
+        prefix = self._get_name_prefix(instance)
+        suffix = self._get_trunk_suffix(action_id)
+        trunk_port_name = self._get_trunk_port_name(prefix, suffix)
+        trunk_name = self._get_trunk_name(prefix, suffix)
+        sub_port_name = self._get_sub_port_name(prefix, vlan_network, suffix)
 
+        trunk_network = self._api.Network.get(self._trunk_network_id)
         trunk_port = self._api.Port.find_or_create(trunk_port_name, trunk_network)
         trunk = self._api.Trunk.find_or_create(trunk_name, trunk_port)
         sub_port = self._api.Port.find_or_create(
@@ -65,11 +81,15 @@ class QTrunk:
             iface = instance.attach_port(trunk_port)
         return iface
 
-    def remove_trunk(self, instance: Instance, vlan_network: Network) -> None:
+    def remove_trunk(
+        self, instance: Instance, vlan_network: Network, action_id: str
+    ) -> None:
         self._logger.info(f"Removing a trunk from the {instance} with {vlan_network}")
-        trunk_port_name = self._get_trunk_port_name(instance)
-        trunk_name = self._get_trunk_name(instance)
-        sub_port_name = self._get_sub_port_name(instance, vlan_network)
+        prefix = self._get_name_prefix(instance)
+        suffix = self._get_trunk_suffix(action_id)
+        trunk_port_name = self._get_trunk_port_name(prefix, suffix)
+        trunk_name = self._get_trunk_name(prefix, suffix)
+        sub_port_name = self._get_sub_port_name(prefix, vlan_network, suffix)
 
         try:
             trunk = self._api.Trunk.find_first(trunk_name)
