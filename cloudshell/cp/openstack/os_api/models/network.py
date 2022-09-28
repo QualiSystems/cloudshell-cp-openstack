@@ -12,7 +12,7 @@ from cloudshell.cp.openstack.exceptions import NetworkInUse, NetworkNotFound
 from cloudshell.cp.openstack.os_api.models.subnet import Subnet
 
 if TYPE_CHECKING:
-    from cloudshell.cp.openstack.api.api import OsApi
+    from cloudshell.cp.openstack.os_api.api import OsApi
 
 
 class NetworkType(Enum):

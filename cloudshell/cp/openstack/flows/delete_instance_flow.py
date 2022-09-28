@@ -1,8 +1,8 @@
 from contextlib import suppress
 
-from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.exceptions import FloatingIpNotFound
 from cloudshell.cp.openstack.models import OSNovaImgDeployedApp
+from cloudshell.cp.openstack.os_api.api import OsApi
 from cloudshell.cp.openstack.os_api.models import Instance
 from cloudshell.cp.openstack.utils.instance_helpers import (
     get_instance_security_group,

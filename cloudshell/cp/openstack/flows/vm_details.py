@@ -4,8 +4,8 @@ from cloudshell.cp.core.cancellation_manager import CancellationContextManager
 from cloudshell.cp.core.flows.vm_details import AbstractVMDetailsFlow
 from cloudshell.cp.core.request_actions.models import VmDetailsData
 
-from cloudshell.cp.openstack.api.api import OsApi
 from cloudshell.cp.openstack.models import OSNovaImgDeployedApp
+from cloudshell.cp.openstack.os_api.api import OsApi
 from cloudshell.cp.openstack.os_api.services import vm_details_provider
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 

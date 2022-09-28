@@ -11,7 +11,7 @@ from cloudshell.cp.openstack.exceptions import SubnetNotFound
 from cloudshell.cp.openstack.utils.cached_property import cached_property
 
 if TYPE_CHECKING:
-    from cloudshell.cp.openstack.api.api import OsApi
+    from cloudshell.cp.openstack.os_api.api import OsApi
     from cloudshell.cp.openstack.os_api.models import Network
 
 

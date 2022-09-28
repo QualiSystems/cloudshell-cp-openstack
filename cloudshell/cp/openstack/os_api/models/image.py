@@ -11,7 +11,7 @@ from glanceclient.v2.client import Client as GlanceClient
 from cloudshell.cp.openstack.exceptions import ImageNotFound
 
 if TYPE_CHECKING:
-    from cloudshell.cp.openstack.api.api import OsApi
+    from cloudshell.cp.openstack.os_api.api import OsApi
 
 
 @attr.s(auto_attribs=True, str=False)

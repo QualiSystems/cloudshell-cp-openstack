@@ -11,7 +11,7 @@ from neutronclient.v2_0.client import Client as NeutronClient
 from cloudshell.cp.openstack.exceptions import SecurityGroupNotFound
 
 if TYPE_CHECKING:
-    from cloudshell.cp.openstack.api.api import OsApi
+    from cloudshell.cp.openstack.os_api.api import OsApi
 
 
 @attr.s(auto_attribs=True, str=False)
