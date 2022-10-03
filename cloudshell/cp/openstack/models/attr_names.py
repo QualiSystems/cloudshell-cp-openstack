@@ -9,3 +9,4 @@ class ResourceAttrName:
     user_data = "User data"
     inbound_ports = "Inbound Ports"
     behavior_during_save = "Behavior during save"
+    private_ip = "Private IP"
