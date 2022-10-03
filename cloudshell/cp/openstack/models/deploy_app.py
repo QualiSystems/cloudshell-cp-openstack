@@ -93,3 +93,4 @@ class OSNovaImgDeployApp(DeployApp):
     user_data = ResourceAttrRODeploymentPath(ATTR_NAME.user_data)
     inbound_ports = ResourceInboundPortsRO(ATTR_NAME.inbound_ports)
     behavior_during_save = ResourceAttrRODeploymentPath(ATTR_NAME.behavior_during_save)
+    private_ip = ResourceAttrRODeploymentPath(ATTR_NAME.private_ip)

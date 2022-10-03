@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+from ipaddress import IPv4Address, IPv4Network
+
 from cloudshell.cp.core.cancellation_manager import CancellationContextManager
 from cloudshell.cp.core.rollback import RollbackCommand, RollbackCommandsManager
 from cloudshell.cp.core.utils.name_generator import NameGenerator
 
+from cloudshell.cp.openstack.exceptions import PrivateIpIsNotInMgmtNetwork
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp
 from cloudshell.cp.openstack.os_api.api import OsApi
-from cloudshell.cp.openstack.os_api.models import Instance
+from cloudshell.cp.openstack.os_api.models import Instance, Network, Port
 from cloudshell.cp.openstack.resource_config import OSResourceConfig
 from cloudshell.cp.openstack.utils.instance_helpers import get_mgmt_iface_name
 from cloudshell.cp.openstack.utils.udev import get_udev_rules
@@ -36,12 +39,16 @@ class CreateInstanceCommand(RollbackCommand):
         image = self._api.Image.get(self._deploy_app.image_id)
         flavor = self._api.Flavor.find_first(self._deploy_app.instance_flavor)
         mgmt_net = self._api.Network.get(self._resource_conf.os_mgmt_net_id)
+        port = None
+        if self._deploy_app.private_ip:
+            port = self._get_port_for_private_ip(mgmt_net)
 
         instance = self._api.Instance.create(
             name,
             image,
             flavor,
-            mgmt_net,
+            network=mgmt_net,
+            port=port,
             availability_zone=self._deploy_app.availability_zone,
             affinity_group_id=self._deploy_app.affinity_group_id,
             user_data=self._prepare_user_data(),
@@ -71,3 +78,16 @@ class CreateInstanceCommand(RollbackCommand):
         assert len(ifaces) == 1
         mgmt_iface = ifaces[0]
         mgmt_iface.port.name = get_mgmt_iface_name(inst)
+
+    def _get_port_for_private_ip(self, mgmt_net: Network) -> Port:
+        ip_str = self._deploy_app.private_ip
+        ip = IPv4Address(ip_str)
+        for subnet in mgmt_net.subnets:
+            if ip in IPv4Network(subnet.cidr):
+                break
+        else:
+            raise PrivateIpIsNotInMgmtNetwork(ip_str, mgmt_net)
+
+        return self._api.Port.create(
+            "", mgmt_net, fixed_ip=ip_str, fixed_ip_subnet=subnet
+        )
