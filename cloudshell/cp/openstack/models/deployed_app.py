@@ -31,3 +31,4 @@ class OSNovaImgDeployedApp(DeployedApp):
         ATTR_NAME.floating_ip_subnet_id
     )
     auto_udev = ResourceBoolAttrRODeploymentPath(ATTR_NAME.auto_udev)
+    private_ip = ResourceAttrRODeploymentPath(ATTR_NAME.private_ip)

@@ -163,3 +163,8 @@ class SubnetCidrFormatError(OSBaseException):
             "Subnet CIDR format is wrong. Format - CIDR[;Gateway][;First_IP-Last_IP]. "
             "For example, `192.168.10.0/24;192.168.10.1;192.168.10.30-192.168.10.50`"
         )
+
+
+class PrivateIpIsNotInMgmtNetwork(OSBaseException):
+    def __init__(self, ip: str, network: Network):
+        super().__init__(f"Private IP {ip} is not inside the {network}")
