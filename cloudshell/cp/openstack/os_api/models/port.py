@@ -16,7 +16,7 @@ from cloudshell.cp.openstack.utils.cached_property import cached_property
 
 if TYPE_CHECKING:
     from cloudshell.cp.openstack.os_api.api import OsApi
-    from cloudshell.cp.openstack.os_api.models import Trunk
+    from cloudshell.cp.openstack.os_api.models import Subnet, Trunk
 
 
 def _update_attribute(self: Port, attribute: attr.Attribute, new_value: str) -> str:
@@ -79,8 +79,15 @@ class Port:
         name: str,
         network: Network,
         mac_address: str | None = None,
+        fixed_ip: str | None = None,
+        fixed_ip_subnet: Subnet | None = None,
     ) -> Port:
+        assert (fixed_ip and fixed_ip_subnet) or (not fixed_ip and not fixed_ip_subnet)
         port_data = {"name": name, "network_id": network.id, "mac_address": mac_address}
+        if fixed_ip and fixed_ip_subnet:
+            port_data["fixed_ips"] = [  # type: ignore
+                {"subnet_id": fixed_ip_subnet.id, "ip_address": fixed_ip}
+            ]
         cls._logger.debug(f"Creating a port with data {port_data}")
         full_port_dict = cls._neutron.create_port({"port": port_data})["port"]
         return cls.from_dict(full_port_dict)

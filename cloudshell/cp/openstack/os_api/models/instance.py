@@ -93,23 +93,29 @@ class Instance:
         name: str,
         image: Image,
         flavor: Flavor,
-        network: Network,
+        network: Network | None = None,
+        port: Port | None = None,
         availability_zone: str | None = None,
         affinity_group_id: str | None = None,
         user_data: str | None = None,
         cancellation_manager: ContextManager = nullcontext(),
     ) -> Instance:
+        assert network or port
         cls._logger.info(
             f"Creating an Instance '{name}' using the {image}, the {flavor}, "
             f"the {network}"
         )
         scheduler_hints = {"group": affinity_group_id} if affinity_group_id else None
+        if port:
+            nics = [{"port-id": port.id}]
+        else:
+            nics = [{"net-id": network.id}]  # type: ignore
 
         os_inst = cls._nova.servers.create(
             name,
             image.id,
             flavor.id,
-            nics=[{"net-id": network.id}],
+            nics=nics,
             userdata=user_data,
             availability_zone=availability_zone,
             scheduler_hints=scheduler_hints,
