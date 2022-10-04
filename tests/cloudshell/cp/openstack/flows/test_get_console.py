@@ -24,9 +24,9 @@ def test_validate_console_type(console_type, error):
         validate_console_type(console_type)
 
 
-def test_get_console(os_api, deployed_app, nova, instance):
-    result = get_console(os_api, deployed_app, "Instance Console")
+def test_get_console(os_api_v2, deployed_app, nova, instance):
+    result = get_console(os_api_v2, deployed_app, "Instance Console")
 
-    nova.servers.find.assert_called_once_with(id=deployed_app.vmdetails.uid)
+    nova.servers.get.assert_called_once_with(deployed_app.vmdetails.uid)
     instance.get_console_url.assert_called_once_with("novnc")
     assert result == instance.get_console_url()["console"]["url"]

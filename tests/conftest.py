@@ -20,9 +20,11 @@ from cloudshell.shell.core.driver_context import (
     ResourceRemoteCommandContext,
 )
 
-from cloudshell.cp.openstack.api.api import OsApi
+from .neutron_emu import NeutronEmu
+
 from cloudshell.cp.openstack.constants import SHELL_NAME
 from cloudshell.cp.openstack.models import OSNovaImgDeployApp, OSNovaImgDeployedApp
+from cloudshell.cp.openstack.os_api.api import OsApi
 from cloudshell.cp.openstack.os_api.commands.rollback import RollbackCommandsManager
 from cloudshell.cp.openstack.os_api.models import NetworkType
 from cloudshell.cp.openstack.os_api.models.instance import InstanceStatus
@@ -486,5 +488,23 @@ def os_api_v2(logger, os_session, nova, neutron, glance, monkeypatch):
 @pytest.fixture
 def simple_network(os_api_v2):
     return os_api_v2.Network(
-        id="net id", name="net name", network_type=NetworkType.VXLAN, vlan_id=None
+        id="net id",
+        name="net name",
+        network_type=NetworkType.VXLAN,
+        vlan_id=None,
+        is_external=False,
     )
+
+
+@pytest.fixture
+def neutron_emu(os_api_v2) -> NeutronEmu:
+    emu = NeutronEmu()
+    os_api_v2._neutron = emu
+    return emu
+
+
+@pytest.fixture
+def local_network(os_api_v2, neutron_emu):
+    net = os_api_v2.Network.create("net name")
+    os_api_v2.Subnet.create("subnet name", net, "192.168.1.0/24")
+    return net

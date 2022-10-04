@@ -1,40 +1,62 @@
 import pytest
 
-
-@pytest.fixture()
-def add_security_group(neutron):
-    neutron.show_security_group.return_value = {
-        "security_group": {"id": "sg id", "name": "sg name"}
-    }
+from cloudshell.cp.openstack.exceptions import SecurityGroupNotFound
 
 
 @pytest.fixture()
-def sg(os_api_v2, add_security_group):
-    return os_api_v2.SecurityGroup.get("sg id")
+def sg(os_api_v2, neutron_emu):
+    return os_api_v2.SecurityGroup.create("default")
 
 
-def test_create(os_api_v2, neutron):
+def test_get(os_api_v2, neutron_emu):
+    id_, name = "id", "name"
+    neutron_emu.emu_add_security_group(id_, name)
+
+    sg = os_api_v2.SecurityGroup.get(id_)
+
+    assert sg.id == id_
+    assert sg.name == name
+    assert str(sg) == f"Security Group '{name}'"
+
+
+def test_get_not_found(os_api_v2, neutron_emu):
+    with pytest.raises(SecurityGroupNotFound):
+        os_api_v2.SecurityGroup.get("missed id")
+
+
+def test_all(os_api_v2, neutron_emu):
+    id1, name1 = "id1", "name1"
+    id2, name2 = "id2", "name2"
+    neutron_emu.emu_add_security_group(id1, name1)
+    neutron_emu.emu_add_security_group(id2, name2)
+
+    sgs = list(os_api_v2.SecurityGroup.all())
+    assert len(sgs) == 2
+    sg1, sg2 = sgs
+
+    assert sg1.id == id1
+    assert sg1.name == name1
+    assert sg2.id == id2
+    assert sg2.name == name2
+
+
+def test_create(os_api_v2, neutron_emu):
     name = "name"
-    sg_id = "sg id"
-    neutron.create_security_group.return_value = {
-        "security_group": {"id": sg_id, "name": name}
-    }
+
     sg = os_api_v2.SecurityGroup.create(name)
 
-    assert sg.id == sg_id
     assert sg.name == name
-    neutron.create_security_group.assert_called_once_with(
-        {"security_group": {"name": name}}
-    )
+    assert len(list(os_api_v2.SecurityGroup.all())) == 1
 
 
-def test_remove(sg, neutron):
+def test_remove(os_api_v2, sg):
     sg.remove()
+    sg.remove()  # ignores not found
 
-    neutron.delete_security_group.assert_called_once_with(sg.id)
+    assert len(list(os_api_v2.SecurityGroup.all())) == 0
 
 
-def test_add_rule(sg, neutron):
+def test_add_rule(sg, neutron_emu):
     cidr = "10.0.0.0/24"
     protocol = "tcp"
     port_min = port_max = 22
@@ -56,6 +78,5 @@ def test_add_rule(sg, neutron):
         "security_group_id": sg.id,
         "direction": direction,
     }
-    neutron.create_security_group_rule.assert_called_once_with(
-        {"security_group_rule": expected_data}
-    )
+    assert neutron_emu.emu_security_group_rules[0] == expected_data
+    assert len(neutron_emu.emu_security_group_rules) == 1
