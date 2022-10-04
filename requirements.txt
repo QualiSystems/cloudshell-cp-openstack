@@ -1,4 +1,4 @@
-cloudshell-cp-core~=2.1
+cloudshell-cp-core~=2.5
 cloudshell-shell-standards~=1.1
 cloudshell-shell-core~=5.0
 cloudshell-shell-connectivity-flow~=3.1
@@ -9,4 +9,4 @@ python-neutronclient~=7.2
 python-glanceclient~=3.0
 jsonpickle~=1.4
 keystoneauth1~=4.2
-attrs~=21.0
+attrs>=21.3,<23.0
