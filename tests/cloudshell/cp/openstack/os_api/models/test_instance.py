@@ -7,6 +7,21 @@ from cloudshell.cp.openstack.os_api.models import Instance
 from cloudshell.cp.openstack.os_api.models.instance import InstanceStatus
 
 
+@pytest.mark.parametrize(
+    ("status_str", "status_enum"),
+    (
+        ("ACTIVE", InstanceStatus.ACTIVE),
+        ("active", InstanceStatus.ACTIVE),
+        ("error", InstanceStatus.ERROR),
+        ("another status", InstanceStatus.OTHER),
+    ),
+)
+def test_instance_status(status_str, status_enum):
+    assert InstanceStatus(status_str) is status_enum
+    if status_enum is InstanceStatus.OTHER:
+        assert InstanceStatus(status_str)._real_value == status_str
+
+
 @pytest.fixture
 def api_instance(os_api_v2, instance):
     return os_api_v2.Instance(instance)
