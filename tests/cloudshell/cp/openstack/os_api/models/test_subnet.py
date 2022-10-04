@@ -1,52 +1,96 @@
-def test_create_subnet(os_api_v2, neutron, simple_network):
+import pytest
+
+from cloudshell.cp.openstack.exceptions import SubnetNotFound
+
+
+@pytest.fixture
+def local_network(os_api_v2, neutron_emu):
+    return os_api_v2.Network.create("net name")
+
+
+def test_get(os_api_v2, neutron_emu, local_network):
+    id_ = "id"
+    name = "subnet name"
+    cidr = "192.168.1.0/24"
+    neutron_emu.emu_add_subnet(id_, name, local_network.id, cidr)
+
+    subnet = os_api_v2.Subnet.get(id_)
+
+    assert subnet.id == id_
+    assert subnet.name == name
+    assert subnet.network_id == local_network.id
+    assert subnet.network == local_network
+    assert subnet.cidr == cidr
+    assert str(subnet) == f"Subnet '{name}'"
+
+
+def test_get_not_found(os_api_v2, neutron_emu):
+    with pytest.raises(SubnetNotFound):
+        os_api_v2.Subnet.get("missed id")
+
+
+def test_find_by_network(os_api_v2, neutron_emu, local_network):
+    id1, name1, cidr1 = "id1", "name1", "10.0.1.0/24"
+    id2, name2, cidr2 = "id2", "name2", "10.0.2.0/24"
+    neutron_emu.emu_add_subnet(id1, name1, local_network.id, cidr1)
+    neutron_emu.emu_add_subnet(id2, name2, local_network.id, cidr2)
+
+    subnets = list(os_api_v2.Subnet.find_by_network(local_network.id))
+
+    assert len(subnets) == 2
+    subnet1, subnet2 = subnets
+    assert subnet1.id == id1
+    assert subnet1.name == name1
+    assert subnet1.cidr == cidr1
+    assert subnet1.network_id == local_network.id
+
+    assert subnet2.id == id2
+    assert subnet2.name == name2
+    assert subnet2.cidr == cidr2
+    assert subnet2.network_id == local_network.id
+
+
+def test_all(os_api_v2, neutron_emu, local_network):
+    id1, name1, cidr1 = "1", "name1", "10.0.1.0/24"
+    id2, name2, cidr2 = "2", "name2", "10.0.2.0/24"
+    neutron_emu.emu_add_subnet(id1, name1, local_network.id, cidr1)
+    neutron_emu.emu_add_subnet(id2, name2, local_network.id, cidr2)
+
+    subnets = list(os_api_v2.Subnet.all())
+
+    assert len(subnets) == 2
+    subnet1, subnet2 = subnets
+
+    assert subnet1.id == id1
+    assert subnet1.name == name1
+    assert subnet1.network_id == local_network.id
+    assert subnet1.cidr == cidr1
+
+    assert subnet2.id == id2
+    assert subnet2.name == name2
+    assert subnet2.network_id == local_network.id
+    assert subnet2.cidr == cidr2
+
+
+def test_create(os_api_v2, neutron_emu, local_network):
     subnet_name = "subnet name"
     cidr = "10.0.2.0/24"
 
-    subnet = os_api_v2.Subnet.create(subnet_name, simple_network, cidr)
+    subnet = os_api_v2.Subnet.create(subnet_name, local_network, cidr)
 
-    data = {
-        "name": subnet_name,
-        "network_id": simple_network.id,
-        "cidr": cidr,
-        "ip_version": 4,
-        "gateway_ip": None,
-        "allocation_pools": [],
-    }
-    neutron.create_subnet.assert_called_once_with({"subnet": data})
-    assert subnet == os_api_v2.Subnet.from_dict(neutron.create_subnet()["subnet"])
-
-
-def test_get_subnet(os_api_v2, neutron, simple_network):
-    subnet_id = "subnet id"
-    subnet_name = "subnet name"
-    cidr = "192.168.1.0/24"
-    neutron.show_subnet.return_value = {
-        "subnet": {
-            "id": subnet_id,
-            "name": subnet_name,
-            "network_id": simple_network.id,
-            "ip_version": 4,
-            "cidr": cidr,
-            "gateway_ip": None,
-            "allocation_pools": [{"start": "192.168.1.1", "end": "192.168.1.254"}],
-        }
-    }
-    neutron.show_network.return_value = {
-        "network": {
-            "id": simple_network.id,
-            "name": simple_network.name,
-            "provider:network_type": simple_network.network_type.value,
-            "provider:segmentation_id": simple_network.vlan_id,
-        }
-    }
-
-    subnet = os_api_v2.Subnet.get(subnet_id)
-
-    assert subnet.id == subnet_id
     assert subnet.name == subnet_name
-    assert subnet.network_id == simple_network.id
     assert subnet.cidr == cidr
-    assert str(subnet) == f"Subnet '{subnet_name}'"
+    assert subnet.ip_version == 4
+    assert subnet.network_id == local_network.id
+    assert subnet.allocation_pools == []
+    assert len(list(os_api_v2.Subnet.all())) == 1
 
-    assert subnet.network == simple_network
-    neutron.show_network.assert_called_once_with(simple_network.id)
+
+def test_getting_used_cidrs(os_api_v2, neutron_emu, local_network):
+    cidr1, cidr2 = "10.0.1.0/24", "10.0.2.0/24"
+    neutron_emu.emu_add_subnet("id", "name", local_network.id, cidr1)
+    neutron_emu.emu_add_subnet("id", "name", local_network.id, cidr2)
+
+    cidrs = os_api_v2.Subnet.get_used_cidrs()
+
+    assert cidrs == {cidr1, cidr2}

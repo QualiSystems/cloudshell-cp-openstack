@@ -13,9 +13,9 @@ from cloudshell.shell.flows.connectivity.parse_request_service import (
     ParseConnectivityRequestService,
 )
 
-from cloudshell.cp.openstack.exceptions import NetworkNotFound
 from cloudshell.cp.openstack.flows import ConnectivityFlow
 from cloudshell.cp.openstack.models.connectivity_models import OsConnectivityActionModel
+from cloudshell.cp.openstack.os_api.models import NetworkType
 from cloudshell.cp.openstack.services.network_service import QVlanNetwork
 
 
@@ -25,6 +25,11 @@ def connectivity_flow(resource_conf, logger, os_api_v2):
         is_vlan_range_supported=False, is_multi_vlan_supported=False
     )
     return ConnectivityFlow(resource_conf, service, logger, os_api_v2)
+
+
+@pytest.fixture()
+def instance_api(os_api_v2, instance):
+    return os_api_v2.Instance(instance)
 
 
 @pytest.fixture()
@@ -50,7 +55,7 @@ def create_connectivity_action():
                     {"attributeName": "CTag", "attributeValue": ""},
                     {
                         "attributeName": "Virtual Network",
-                        "attributeValue": virtual_network or str(vlan),
+                        "attributeValue": virtual_network,
                     },
                     {"attributeName": "Subnet CIDR", "attributeValue": subnet_cidr},
                 ],
@@ -68,23 +73,18 @@ def create_connectivity_action():
 
 
 def test_add_vlan_flow(
-    connectivity_flow, neutron, nova, instance, create_connectivity_action
+    connectivity_flow,
+    neutron_emu,
+    nova,
+    instance,
+    create_connectivity_action,
+    resource_conf,
+    os_api_v2,
 ):
     vlan = 12
     qnq = False
     vm_uid = "vm uid"
-    net_id = "net id"
     net_name = QVlanNetwork._get_network_name(vlan)
-    subnet_name = QVlanNetwork._get_subnet_name(net_id)
-    neutron.create_network.return_value = {
-        "network": {
-            "id": net_id,
-            "subnets": [],
-            "name": net_name,
-            "provider:network_type": connectivity_flow._resource_conf.vlan_type.lower(),
-            "provider:segmentation_id": vlan,
-        }
-    }
     action = create_connectivity_action(
         vlan, ConnectionModeEnum.ACCESS, qnq, vm_uid, ConnectivityTypeEnum.SET_VLAN
     )
@@ -93,53 +93,34 @@ def test_add_vlan_flow(
     connectivity_flow._set_vlan(action)
 
     # validate
-    neutron.create_network.assert_called_once_with(
-        {
-            "network": {
-                "provider:network_type": (
-                    connectivity_flow._resource_conf.vlan_type.lower()
-                ),
-                "provider:segmentation_id": vlan,
-                "name": net_name,
-                "admin_state_up": True,
-            }
-        }
-    )
-    neutron.create_subnet.assert_called_once_with(
-        {
-            "subnet": {
-                "name": subnet_name,
-                "network_id": net_id,
-                "cidr": "10.0.0.0/24",
-                "ip_version": 4,
-                "gateway_ip": None,
-                "allocation_pools": [],
-            }
-        }
-    )
+    created_net = os_api_v2.Network.find_by_vlan_id(vlan)
+    assert created_net.name == net_name
+    assert created_net.vlan_id == vlan
+    assert created_net.network_type == NetworkType(resource_conf.vlan_type)
+
+    subnet_name = QVlanNetwork._get_subnet_name(created_net.id)
+    subnet = next(created_net.subnets)
+    assert subnet.name == subnet_name
+    assert subnet.cidr == "10.0.0.0/24"
+    assert subnet.ip_version == 4
+    assert subnet.gateway is None
+    assert subnet.allocation_pools == []
     nova.servers.get.assert_called_once_with(vm_uid)
     nova.servers.interface_attach.assert_called_once_with(
-        instance, port_id=None, net_id=net_id, fixed_ip=None
+        instance, port_id=None, net_id=created_net.id, fixed_ip=None
     )
+
+    assert len(list(os_api_v2.Network.all())) == 1
+    assert len(list(os_api_v2.Subnet.all())) == 1
 
 
 def test_add_vlan_flow_failed(
-    connectivity_flow, nova, neutron, create_connectivity_action
+    connectivity_flow, nova, neutron_emu, create_connectivity_action, os_api_v2
 ):
     vlan = 12
-    net_id = "net id"
     vm_uuid = "vm uuid"
-    net_name = QVlanNetwork._get_network_name(vlan)
-    neutron.create_network.return_value = {
-        "network": {
-            "id": net_id,
-            "subnets": [],
-            "name": net_name,
-            "provider:network_type": connectivity_flow._resource_conf.vlan_type.lower(),
-            "provider:segmentation_id": vlan,
-        }
-    }
     nova.servers.interface_attach.side_effect = ValueError("failed to attach")
+
     action = create_connectivity_action(
         vlan, ConnectionModeEnum.ACCESS, False, vm_uuid, ConnectivityTypeEnum.SET_VLAN
     )
@@ -147,11 +128,12 @@ def test_add_vlan_flow_failed(
     with pytest.raises(ValueError, match="failed to attach"):
         connectivity_flow._set_vlan(action)
 
-    neutron.delete_network.assert_called_once_with(net_id)
+    assert len(list(os_api_v2.Network.all())) == 0
+    assert len(list(os_api_v2.Subnet.all())) == 0
 
 
 def test_remove_vlan_flow_not_found(
-    connectivity_flow, neutron, nova, create_connectivity_action
+    connectivity_flow, neutron_emu, nova, create_connectivity_action
 ):
     vlan = 13
     vm_uuid = "vm uuid"
@@ -162,37 +144,39 @@ def test_remove_vlan_flow_not_found(
         vm_uuid,
         ConnectivityTypeEnum.REMOVE_VLAN,
     )
-    neutron.list_networks.side_effect = NetworkNotFound(vlan_id=vlan)
 
+    # ignore removed network
     connectivity_flow._remove_vlan(action)
-
-    neutron.delete_network.assert_not_called()
 
 
 def test_remove_vlan_flow(
-    connectivity_flow, neutron, nova, instance, create_connectivity_action
+    connectivity_flow,
+    neutron_emu,
+    nova,
+    instance,
+    create_connectivity_action,
+    resource_conf,
+    os_api_v2,
 ):
     vlan = 12
     vm_uid = "vm uid"
     net_name = QVlanNetwork._get_network_name(vlan)
     net_id = "net id"
+    mgmt_port_id = "mgmt port id"
     port_id = "port id"
-    net_dict = {
-        "name": net_name,
-        "id": net_id,
-        "provider:network_type": connectivity_flow._resource_conf.vlan_type.lower(),
-        "provider:segmentation_id": vlan,
-    }
-    neutron.list_networks.return_value = {"networks": [net_dict]}
-    instance.interface_list.return_value = [Mock(net_id=net_id, port_id=port_id)]
-    neutron.show_port.return_value = {
-        "port": {
-            "id": port_id,
-            "name": "port name",
-            "network_id": net_id,
-            "mac_address": "mac address",
-        }
-    }
+
+    neutron_emu.emu_add_network(resource_conf.os_mgmt_net_id, "mgmt")
+    neutron_emu.emu_add_port(mgmt_port_id, "mgmt-port", resource_conf.os_mgmt_net_id)
+
+    neutron_emu.emu_add_network(
+        net_id, net_name, NetworkType(resource_conf.vlan_type), vlan
+    )
+    neutron_emu.emu_add_port(port_id, "", net_id)
+
+    instance.interface_list.return_value = [
+        Mock(net_id=resource_conf.os_mgmt_net_id, port_id=mgmt_port_id),
+        Mock(net_id=net_id, port_id=port_id),
+    ]
     action = create_connectivity_action(
         vlan, ConnectionModeEnum.ACCESS, False, vm_uid, ConnectivityTypeEnum.REMOVE_VLAN
     )
@@ -201,6 +185,6 @@ def test_remove_vlan_flow(
 
     nova.servers.get.assert_called_once_with(vm_uid)
     instance.interface_list.assert_called_once_with()
-    neutron.list_networks.assert_called_once_with(**{"provider:segmentation_id": vlan})
     nova.servers.interface_detach.assert_called_once_with(instance, port_id)
-    neutron.delete_network.assert_called_once_with(net_id)
+
+    assert len(list(os_api_v2.Network.all())) == 1
