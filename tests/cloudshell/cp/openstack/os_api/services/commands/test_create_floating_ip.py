@@ -17,18 +17,13 @@ def iface():
 
 
 @pytest.fixture()
-def instance(iface):
-    return Mock(name="instance", interfaces=iter((iface,)))
-
-
-@pytest.fixture()
 def command(
     rollback_manager,
     cancellation_context_manager,
     api,
     deploy_app,
     resource_conf,
-    instance,
+    iface,
 ):
     return CreateFloatingIP(
         rollback_manager,
@@ -36,7 +31,7 @@ def command(
         api,
         resource_conf,
         deploy_app,
-        instance,
+        iface,
     )
 
 
