@@ -479,9 +479,9 @@ def sleepless(monkeypatch):
 @pytest.fixture()
 def os_api_v2(logger, os_session, nova, neutron, glance, monkeypatch):
     api = OsApi(os_session, logger)
-    monkeypatch.setattr(api, "_nova", nova)
-    monkeypatch.setattr(api, "_neutron", neutron)
-    monkeypatch.setattr(api, "_glance", glance)
+    monkeypatch.setattr(api, "_nova", nova, raising=False)
+    monkeypatch.setattr(api, "_neutron", neutron, raising=False)
+    monkeypatch.setattr(api, "_glance", glance, raising=False)
     return api
 
 
