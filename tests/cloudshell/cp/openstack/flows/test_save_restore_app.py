@@ -14,7 +14,7 @@ from cloudshell.cp.core.request_actions.models import (
 
 from cloudshell.cp.openstack.constants import OS_FROM_GLANCE_IMAGE_DEPLOYMENT_PATH
 from cloudshell.cp.openstack.flows.save_restore_app import SaveRestoreAppFlow
-from cloudshell.cp.openstack.models.attr_names import ResourceAttrName
+from cloudshell.cp.openstack.models.attr_names import AppAttrName
 
 
 @pytest.fixture()
@@ -24,11 +24,10 @@ def save_restore_flow(resource_conf, logger, cancellation_context_manager, os_ap
     )
 
 
-def test_save_app(save_restore_flow, instance):
-    action_id = "action id"
-    vm_uuid = "vm uuid"
-    snapshot_id = "snapshot id"
-    action = SaveApp(
+def _get_action(
+    vm_uuid: str, behavior_during_save: str, action_id: str = "action id"
+) -> SaveApp:
+    return SaveApp(
         action_id,
         SaveAppParams(
             saveDeploymentModel="",
@@ -37,12 +36,20 @@ def test_save_app(save_restore_flow, instance):
             sourceAppName="",
             deploymentPathAttributes=[
                 Attribute(
-                    attributeName=ResourceAttrName.behavior_during_save,
-                    attributeValue="Power Off",
+                    attributeName=AppAttrName.behavior_during_save,
+                    attributeValue=behavior_during_save,
                 )
             ],
         ),
     )
+
+
+def test_save_app(save_restore_flow, instance, resource_conf):
+    action_id = "action id"
+    vm_uuid = "vm uuid"
+    snapshot_id = "snapshot id"
+    action = _get_action(vm_uuid, "Inherited", action_id)
+    resource_conf.behavior_during_save = "Power Off"
     instance.create_image.return_value = snapshot_id
 
     result = save_restore_flow.save_apps([action])
@@ -55,7 +62,7 @@ def test_save_app(save_restore_flow, instance):
                     "additionalData": [],
                     "artifacts": [
                         {
-                            "artifactName": ResourceAttrName.image_id,
+                            "artifactName": AppAttrName.image_id,
                             "artifactRef": snapshot_id,
                         }
                     ],
@@ -64,7 +71,7 @@ def test_save_app(save_restore_flow, instance):
                     "saveDeploymentModel": OS_FROM_GLANCE_IMAGE_DEPLOYMENT_PATH,
                     "savedEntityAttributes": [
                         {
-                            "attributeName": ResourceAttrName.image_id,
+                            "attributeName": AppAttrName.image_id,
                             "attributeValue": snapshot_id,
                         }
                     ],
@@ -80,6 +87,18 @@ def test_save_app(save_restore_flow, instance):
     )
 
 
+def test_app_overwrite_behavior_during_save(save_restore_flow, instance, resource_conf):
+    vm_uuid = "vm uuid"
+    snapshot_id = "snapshot id"
+    action = _get_action(vm_uuid, "Remain Powered On")
+    resource_conf.behavior_during_save = "Power Off"
+    instance.create_image.return_value = snapshot_id
+
+    save_restore_flow.save_apps([action])
+
+    instance.assert_has_calls([call.create_image(f"Clone of {instance.name}")])
+
+
 def test_delete_saved_apps(save_restore_flow, glance):
     action_id = "action id"
     snapshot_id = "snapshot id"
@@ -89,9 +108,7 @@ def test_delete_saved_apps(save_restore_flow, glance):
             saveDeploymentModel="",
             savedSandboxId="",
             artifacts=[
-                Artifact(
-                    artifactRef=snapshot_id, artifactName=ResourceAttrName.image_id
-                )
+                Artifact(artifactRef=snapshot_id, artifactName=AppAttrName.image_id)
             ],
             savedAppName="",
         ),
