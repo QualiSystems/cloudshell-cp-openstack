@@ -1,4 +1,4 @@
-class ResourceAttrName:
+class AppAttrName:
     availability_zone = "Availability Zone"
     image_id = "Image ID"
     instance_flavor = "Instance Flavor"
