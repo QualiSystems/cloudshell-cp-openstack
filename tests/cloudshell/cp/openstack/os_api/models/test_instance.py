@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
+from novaclient import exceptions as nova_exc
 
 from cloudshell.cp.openstack.exceptions import InstanceErrorState
 from cloudshell.cp.openstack.os_api.models import Instance
@@ -76,6 +77,18 @@ def test_power_on(nova_instance_factory, os_api_v2):
     instance.power_on()
 
     os_instance.start.assert_called_once()
+    os_instance.stop.assert_not_called()
+
+
+def test_power_on_when_snapshot_is_creating(nova_instance_factory, os_api_v2):
+    os_instance = nova_instance_factory(InstanceStatus.SHUTOFF.value)
+    os_instance.start.side_effect = [nova_exc.Conflict(None)] * 11
+    instance = os_api_v2.Instance(os_instance)
+
+    with pytest.raises(nova_exc.Conflict):
+        instance.power_on()
+
+    os_instance.start.assert_called()
     os_instance.stop.assert_not_called()
 
 
