@@ -5,7 +5,7 @@ from cloudshell.shell.standards.core.resource_config_entities import (
 )
 
 from cloudshell.cp.openstack import constants
-from cloudshell.cp.openstack.models.attr_names import ResourceAttrName
+from cloudshell.cp.openstack.models.attr_names import AppAttrName
 
 
 class ResourceAttrRODeploymentPath(ResourceAttrRO):
@@ -20,7 +20,7 @@ class ResourceBoolAttrRODeploymentPath(ResourceBoolAttrRO):
 
 class OSNovaImgDeployedApp(DeployedApp):
     DEPLOYMENT_PATH = constants.OS_FROM_GLANCE_IMAGE_DEPLOYMENT_PATH
-    ATTR_NAME = ResourceAttrName
+    ATTR_NAME = AppAttrName
 
     availability_zone = ResourceAttrRODeploymentPath(ATTR_NAME.availability_zone)
     image_id = ResourceAttrRODeploymentPath(ATTR_NAME.image_id)

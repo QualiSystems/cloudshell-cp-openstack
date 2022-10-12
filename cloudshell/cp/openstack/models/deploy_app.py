@@ -10,7 +10,7 @@ from cloudshell.shell.standards.core.resource_config_entities import (
 )
 
 from cloudshell.cp.openstack import constants
-from cloudshell.cp.openstack.models.attr_names import ResourceAttrName
+from cloudshell.cp.openstack.models.attr_names import AppAttrName
 from cloudshell.cp.openstack.utils.models_helper import get_port_range, is_cidr
 
 
@@ -79,7 +79,7 @@ class ResourceInboundPortsRO(ResourceListAttrRO):
 
 class OSNovaImgDeployApp(DeployApp):
     DEPLOYMENT_PATH = constants.OS_FROM_GLANCE_IMAGE_DEPLOYMENT_PATH
-    ATTR_NAME = ResourceAttrName
+    ATTR_NAME = AppAttrName
 
     availability_zone = ResourceAttrRODeploymentPath(ATTR_NAME.availability_zone)
     image_id = ResourceAttrRODeploymentPath(ATTR_NAME.image_id)

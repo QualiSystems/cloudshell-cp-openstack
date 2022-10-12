@@ -226,7 +226,18 @@ class Instance:
     def power_on(self) -> None:
         if self.status is not InstanceStatus.ACTIVE:
             self._logger.debug(f"Starting the {self}")
-            self._os_instance.start()
+
+            for _ in range(10):
+                # could be error when snapshot creates
+                try:
+                    self._os_instance.start()
+                except nova_exc.Conflict:
+                    time.sleep(1)
+                else:
+                    break
+            else:
+                self._os_instance.start()
+
             self._wait_for_status(InstanceStatus.ACTIVE)
         else:
             self._logger.debug(f"The {self} already active")
