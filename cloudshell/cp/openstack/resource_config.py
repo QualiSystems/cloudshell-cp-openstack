@@ -31,6 +31,7 @@ class OSAttributeNames:
     os_physical_int_name = "OpenStack Physical Interface Name"
     floating_ip_subnet_id = "Floating IP Subnet ID"
     exec_server_selector = "Execution Server Selector"
+    behavior_during_save = "Behavior during save"
 
 
 class OSResourceConfig(GenericResourceConfig):
@@ -47,3 +48,4 @@ class OSResourceConfig(GenericResourceConfig):
     os_physical_int_name = ResourceAttrROShellName(ATTR_NAMES.os_physical_int_name)
     floating_ip_subnet_id = ResourceAttrROShellName(ATTR_NAMES.floating_ip_subnet_id)
     exec_server_selector = ResourceAttrROShellName(ATTR_NAMES.exec_server_selector)
+    behavior_during_save = ResourceAttrROShellName(ATTR_NAMES.behavior_during_save)
